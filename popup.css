@@ -1,0 +1,26 @@
+body {
+  width: 20rem;
+}
+
+ul {
+  list-style-type: none;
+  list-style: none;
+  padding-inline-start: 0;
+  margin: 1rem 0;
+  cursor: pointer;
+}
+
+li {
+  padding: 0.25rem;
+}
+li:nth-child(odd) {
+  background: #80808030;
+}
+li:nth-child(even) {
+  background: #ffffff;
+}
+
+h3,
+p {
+  margin: 0;
+}
