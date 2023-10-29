@@ -60,12 +60,13 @@ document.getElementById("reload-button").addEventListener("click", () => {
                e.preventDefault();
                e.stopPropagation();
 
-               const name = items[allKeys[i]].name;
-               console.log('Name is', name)
-               await chrome.storage.local.remove(name)
+               const drawingName = items[allKeys[i]].name;
+               if (confirm(`Are you sure you want to delete "${drawingName}" drawing?`)) {
+                await chrome.storage.local.remove(drawingName)
 
-                // Removes li from popup
-                li_objects[i].remove();
+                    // Removes li from popup
+                    li_objects[i].remove();
+               }
             });
         }
     });
