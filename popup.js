@@ -24,8 +24,7 @@ document.getElementById("save-button").addEventListener("click", () => {
     save_drawing(name);
 });
 
-
-document.getElementById("reload-button").addEventListener("click", () => {
+function reloadItems() {
     chrome.storage.local.get(null, function(items) {
         var { li_objects, allKeys } = create_list(items);
 
@@ -62,15 +61,47 @@ document.getElementById("reload-button").addEventListener("click", () => {
 
                const drawingName = items[allKeys[i]].name;
                if (confirm(`Are you sure you want to delete "${drawingName}" drawing?`)) {
-                await chrome.storage.local.remove(drawingName)
+                    chrome.tabs.query(
+                        {active: true, currentWindow: true},
+                        tabs => {
+                            const tabId = tabs[0].id;
 
-                    // Removes li from popup
+                            chrome.scripting.executeScript({
+                                target: {
+                                    tabId,
+                                },
+                                func: (deletedDrawingName) => {
+
+                                    const currenDrawingName = localStorage.getItem("name");
+                                    // Delete the name from the local storage, only if is the current loaded
+                                    if (currenDrawingName === deletedDrawingName) {
+                                        localStorage.removeItem("name")
+                                    }
+                                },
+                                args: [drawingName]
+                            })
+                        },
+                    );
+
+                    // Delete from chrome storage
+                    await chrome.storage.local.remove(drawingName)
+
+                    // Removes item from the list
                     li_objects[i].remove();
                }
             });
         }
     });
+}
+
+document.getElementById("reload-button").addEventListener("click", () => {
+    reloadItems();
 });
+
+window.addEventListener("load", () => {
+    reloadItems();
+});
+
 
 const create_list = (items) => {
     var allKeys = Object.keys(items);
@@ -98,9 +129,9 @@ const create_list = (items) => {
 }
 
 function save_drawing(name) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
         const tabId = tabs[0].id;
-        chrome.scripting.executeScript({
+        await chrome.scripting.executeScript({
             target: { tabId: tabId },
             func: (name) => {
                 const drawing = localStorage.getItem("excalidraw");
@@ -122,6 +153,9 @@ function save_drawing(name) {
             },
             args: [name]
         });
+
+        // Reload items after adding a new drawing
+        reloadItems();
     });
 }
 
