@@ -56,6 +56,17 @@ document.getElementById("reload-button").addEventListener("click", () => {
                     );
                 // }
             });
+            li_objects[i].querySelector(".delete-btn").addEventListener("click", async function(e) {
+               e.preventDefault();
+               e.stopPropagation();
+
+               const name = items[allKeys[i]].name;
+               console.log('Name is', name)
+               await chrome.storage.local.remove(name)
+
+                // Removes li from popup
+                li_objects[i].remove();
+            });
         }
     });
 });
@@ -70,11 +81,12 @@ const create_list = (items) => {
     // Create an unordered list element
     const ul = document.createElement("ul");
 
+    const template = document.getElementById("li_template")
     // Loop through the allKeys and create list items
     for (let i = 0; i < allKeys.length; i++) {
-        const li = document.createElement("li"); // Create a list item element
-        li.textContent = allKeys[i]; // Set the text content of the list item
-        ul.appendChild(li); // Append the list item to the unordered list element
+        const newLi = template.content.cloneNode(true); // Create a list item element from template
+        newLi.querySelector("li > p").textContent = allKeys[i]; // Set the text content of the list item
+        ul.appendChild(newLi); // Append the list item to the unordered list element
     }
 
     // Append the unordered list to the parent element
@@ -97,7 +109,8 @@ function save_drawing(name) {
 
                 // send the value back to the extension
                 chrome.runtime.sendMessage({
-                    key: "drawing-info", value: {
+                    key: "drawing-info",
+                    value: {
                         "excalidraw": drawing,
                         "excalidraw-state": excalidraw_state,
                         "version-files": version_files,
