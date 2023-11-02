@@ -67,7 +67,7 @@ export function NavBar({
                 }
               }}
               value={name}
-              placeholder="Name for the drawing"
+              placeholder="Name for the new drawing"
             />
           </Flex>
 
@@ -78,7 +78,9 @@ export function NavBar({
               </Button>
             </Dialog.Close>
             <Dialog.Close>
-              <Button onClick={handleRenameDrawing}>Save</Button>
+              <Button disabled={name === ""} onClick={handleRenameDrawing}>
+                Save
+              </Button>
             </Dialog.Close>
           </Flex>
         </Dialog.Content>

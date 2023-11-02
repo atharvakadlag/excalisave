@@ -167,7 +167,12 @@ export function Drawing(props: DrawingProps) {
                   </Button>
                 </Dialog.Close>
                 <Dialog.Close>
-                  <Button onClick={handleRenameDrawing}>Save</Button>
+                  <Button
+                    disabled={newName === ""}
+                    onClick={handleRenameDrawing}
+                  >
+                    Rename
+                  </Button>
                 </Dialog.Close>
               </Flex>
             </Dialog.Content>
