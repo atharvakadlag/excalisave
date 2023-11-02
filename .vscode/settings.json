@@ -1,0 +1,16 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/dist": true,
+    "**/node_modules": true,
+    // "**/tsconfig.json": true,
+    "**/.nvmrc": true
+  },
+  "jest.jestCommandLine": "yarn test",
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#3c38b0",
+    "titleBar.activeBackground": "#0B484A",
+    "titleBar.activeForeground": "#F0FCFD"
+  }
+}

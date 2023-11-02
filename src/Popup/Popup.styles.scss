@@ -1,0 +1,29 @@
+@import "@radix-ui/themes/styles.css";
+
+body {
+  color: black;
+  background-color: white;
+  width: 500px;
+  height: 500px;
+  margin: 0;
+}
+
+button,
+.rt-DropdownMenuItem {
+  cursor: pointer !important;
+}
+
+#popup-root {
+  height: 100%;
+}
+
+.Popup {
+  height: 100%;
+
+  &__content {
+    height: calc(100% - 60px); // Navbar height
+    overflow-y: scroll;
+    padding-left: 14px;
+    padding-right: 16px;
+  }
+}
