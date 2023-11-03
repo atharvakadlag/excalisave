@@ -48,6 +48,11 @@ module.exports = {
       "execute-scripts",
       "send-drawing-data-to-save.ts"
     ),
+    "content-scripts/liste-changes-local-storage": path.join(
+      sourcePath,
+      "ContentScript",
+      "listen-localstorage-changes.ts"
+    ),
     contentScript: path.join(sourcePath, "ContentScript", "index.ts"),
     popup: path.join(sourcePath, "Popup", "index.tsx"),
     options: path.join(sourcePath, "Options", "index.tsx"),
