@@ -65,7 +65,7 @@ const Popup: React.FC = () => {
   useEffect(() => {
     setRestorePoint({
       searchTerm,
-      sidebarSelected,
+      sidebarSelected: sidebarSelected || "All",
     });
   }, [searchTerm, sidebarSelected]);
 
