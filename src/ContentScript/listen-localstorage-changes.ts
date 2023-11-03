@@ -1,12 +1,10 @@
-import type { Browser } from "webextension-polyfill-ts";
 import {
   MessageType,
   SaveExistentDrawingMessage,
 } from "../constants/message.types";
-import { ExportOptions } from "../interfaces/export-options.interface";
-import { calculateNewDimensions } from "../lib/utils/calculate-new-dimensions.util";
 import { convertBlobToBase64Async } from "../lib/utils/blob-to-base64.util";
-const { browser }: { browser: Browser } = require("webextension-polyfill-ts");
+import { calculateNewDimensions } from "../lib/utils/calculate-new-dimensions.util";
+const { browser } = require("webextension-polyfill-ts");
 
 let prevVersionFiles = localStorage.getItem("version-files");
 
@@ -24,16 +22,14 @@ setInterval(async () => {
     const versionFiles = localStorage.getItem("version-files");
     const versionDataState = localStorage.getItem("version-dataState");
 
-    const dataForExcalidraw: ExportOptions = {
+    const blob = await window.ExcalidrawLib.exportToBlob({
       elements: JSON.parse(excalidraw),
       getDimensions: (width, height) => {
         return calculateNewDimensions(width, height);
       },
-      files: [],
+      files: {},
       appState: JSON.parse(excalidrawState),
-    };
-
-    const blob = await window.ExcalidrawLib.exportToBlob(dataForExcalidraw);
+    });
 
     // Save Blob
     const imageBase64 = await convertBlobToBase64Async(blob);
@@ -55,7 +51,7 @@ setInterval(async () => {
           imageBase64,
         },
       } as SaveExistentDrawingMessage)
-      .then((_response) => {
+      .then((_response: any) => {
         // console.info(
         //   `Message ${MessageType.SAVE_EXISTENT_DRAWING} sent successfully.`,
         //   response

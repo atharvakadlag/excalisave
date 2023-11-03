@@ -38,15 +38,17 @@ const Popup: React.FC = () => {
   const { getRestorePoint, setRestorePoint } = useRestorePoint();
 
   useEffect(() => {
-    getRestorePoint().then((restorePoint) => {
-      if (restorePoint?.searchTerm) {
-        setSearchTerm(restorePoint.searchTerm);
-      }
+    getRestorePoint()
+      .then((restorePoint) => {
+        if (restorePoint?.searchTerm) {
+          setSearchTerm(restorePoint.searchTerm);
+        }
 
-      if (restorePoint?.sidebarSelected) {
-        setSidebarSelected(restorePoint.sidebarSelected);
-      }
-    });
+        setSidebarSelected(restorePoint?.sidebarSelected || "All");
+      })
+      .catch(() => {
+        setSidebarSelected("All");
+      });
 
     const loadDrawings = async () => {
       const result: Record<string, IDrawing> =
