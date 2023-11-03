@@ -67,6 +67,10 @@
         "libs/excalidraw.production.min.js",
         "js/contentScript.bundle.js"
       ]
+    },
+    {
+      "matches": ["https://excalidraw.com/*"],
+      "js": ["js/content-scripts/liste-changes-local-storage.bundle.js"]
     }
   ]
 }

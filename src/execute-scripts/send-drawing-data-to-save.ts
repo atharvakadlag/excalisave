@@ -9,7 +9,6 @@ import { calculateNewDimensions } from "../lib/utils/calculate-new-dimensions.ut
 const { browser }: { browser: Browser } = require("webextension-polyfill-ts");
 
 const params = window.__SCRIPT_PARAMS__;
-console.log("Params", params);
 
 if (!params.saveCurrent && (!params?.name || !params?.id)) {
   throw new Error(
@@ -64,8 +63,8 @@ const versionDataState = localStorage.getItem("version-dataState");
         imageBase64,
       },
     } as SaveExistentDrawingMessage | SaveNewDrawingMessage)
-    .then((response) => {
-      console.info(`Message ${messageType} sent successfully.`, response);
+    .then((_response) => {
+      // console.info(`Message ${messageType} sent successfully.`, response);
     });
 
   localStorage.setItem("__drawing_id", finalId);
