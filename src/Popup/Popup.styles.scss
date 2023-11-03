@@ -3,7 +3,7 @@
 body {
   color: black;
   background-color: white;
-  width: 500px;
+  width: 600px;
   height: 500px;
   margin: 0;
 }
@@ -21,9 +21,10 @@ button,
   height: 100%;
 
   &__content {
-    height: calc(100% - 60px); // Navbar height
+    height: 100%;
+    width: calc(100% - 200px);
     overflow-y: scroll;
-    padding-left: 14px;
-    padding-right: 16px;
+    padding-left: 8px;
+    padding-right: 10px;
   }
 }

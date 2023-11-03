@@ -1,0 +1,23 @@
+.Sidebar {
+  &__item {
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: background-color 50ms linear;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+      background-color: var(--accent-4);
+    }
+
+    svg {
+      padding-right: 6px;
+    }
+
+    &--selected {
+      background-color: var(--accent-10) !important;
+      color: var(--accent-1);
+    }
+  }
+}

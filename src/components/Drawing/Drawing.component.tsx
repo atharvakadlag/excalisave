@@ -1,4 +1,8 @@
-import { DotsHorizontalIcon } from "@radix-ui/react-icons";
+import {
+  DotsHorizontalIcon,
+  HeartFilledIcon,
+  HeartIcon,
+} from "@radix-ui/react-icons";
 import {
   Box,
   Button,
@@ -18,11 +22,14 @@ type DrawingProps = {
   id: string;
   name: string;
   img?: string;
+  favorite?: boolean;
   index: number;
   isCurrent: boolean;
   onClick: (id: string) => void;
   onRenameDrawing?: (id: string, newName: string) => void;
   onDeleteDrawing?: (id: string) => void;
+  onAddToFavorites?: (id: string) => void;
+  onRemoveFromFavorites?: (id: string) => void;
 };
 
 export function Drawing(props: DrawingProps) {
@@ -42,13 +49,14 @@ export function Drawing(props: DrawingProps) {
 
   return (
     <Box className="Drawing">
-      <Flex direction="column" gap="2">
+      <Flex direction="column" gap="2" position={"relative"}>
         <img
           className="Drawing__image"
           onClick={() => props.onClick(props.id)}
           loading={props.index < 4 ? "eager" : "lazy"}
           style={{
             boxShadow: props.isCurrent ? "0px 0px 0px 2px #30a46c" : undefined,
+            position: "relative",
           }}
           src={
             props.img
@@ -73,6 +81,13 @@ export function Drawing(props: DrawingProps) {
           >
             {props.name}
           </Text>
+          {props.favorite === true && (
+            <HeartFilledIcon
+              className="Drawing__favorite"
+              width={"16"}
+              height={"16"}
+            />
+          )}
 
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
@@ -87,8 +102,18 @@ export function Drawing(props: DrawingProps) {
               >
                 Rename
               </DropdownMenu.Item>
-              {/* <DropdownMenu.Separator />
-              <DropdownMenu.Item>Add to favorites</DropdownMenu.Item> */}
+              <DropdownMenu.Item
+                onClick={() => {
+                  if (!props.favorite) {
+                    props?.onAddToFavorites(props.id);
+                  } else {
+                    props?.onRemoveFromFavorites(props.id);
+                  }
+                }}
+              >
+                {props.favorite ? "Remove from favorites" : "Add to favorites"}
+              </DropdownMenu.Item>
+              <DropdownMenu.Item>Add to folder</DropdownMenu.Item>
               <DropdownMenu.Separator />
               <DropdownMenu.Item
                 // shortcut="⌘ ⌫"

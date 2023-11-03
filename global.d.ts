@@ -1,23 +1,18 @@
-interface Window {
-  __SCRIPT_PARAMS__: Record<string, any>;
-  ExcalidrawLib: {
-    exportToBlob: (opts: {
-      elements: any[];
-      appState?: any;
-      files: any[];
-      maxWidthOrHeight?: number;
-      getDimensions?: (
-        width: number,
-        height: number
-      ) => {
-        width: number;
-        height: number;
-        scale?: number;
-      };
-      exportPadding?: number;
-      mimeType?: string;
-      quality?: number;
-      [key: string]: any;
-    }) => Promise<Blob>;
-  };
+import * as ExcalidrawLib from "@excalidraw/excalidraw";
+
+export {};
+
+declare global {
+  interface Window {
+    __SCRIPT_PARAMS__: Record<string, any>;
+    ExcalidrawLib: typeof ExcalidrawLib;
+  }
+}
+
+declare module "webextension-polyfill-ts" {
+  namespace Storage {
+    interface Static {
+      session: Storage.StorageArea;
+    }
+  }
 }

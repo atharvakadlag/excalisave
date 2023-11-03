@@ -1,10 +1,9 @@
 import type { Browser } from "webextension-polyfill-ts";
 import {
   MessageType,
-  SaveNewDrawingMessage,
   SaveExistentDrawingMessage,
+  SaveNewDrawingMessage,
 } from "../constants/message.types";
-import { ExportOptions } from "../interfaces/export-options.interface";
 import { convertBlobToBase64Async } from "../lib/utils/blob-to-base64.util";
 import { calculateNewDimensions } from "../lib/utils/calculate-new-dimensions.util";
 const { browser }: { browser: Browser } = require("webextension-polyfill-ts");
@@ -31,7 +30,7 @@ const versionDataState = localStorage.getItem("version-dataState");
     );
   }
 
-  const dataForExcalidraw: ExportOptions = {
+  const blob = await window.ExcalidrawLib.exportToBlob({
     elements: JSON.parse(excalidraw),
     getDimensions: (width, height) => {
       return calculateNewDimensions(width, height);
@@ -39,11 +38,9 @@ const versionDataState = localStorage.getItem("version-dataState");
     // mimeType: 'image/jpeg',
     // quality: 0.01,
     // TODO: Load files from indexDB
-    files: [],
+    files: {},
     appState: JSON.parse(excalidrawState),
-  };
-
-  const blob = await window.ExcalidrawLib.exportToBlob(dataForExcalidraw);
+  });
 
   // Save Blob
   const imageBase64 = await convertBlobToBase64Async(blob);

@@ -61,6 +61,14 @@ export class DrawingStore {
     });
   }
 
+  private static async deleteDrawingFromFavorites(id: string) {
+    const favorites =
+      (await browser.storage.local.get("favorites"))["favorites"] || [];
+    const newFavorites = favorites.filter((fav: string) => fav !== id);
+
+    await browser.storage.local.set({ favorites: newFavorites });
+  }
+
   static async deleteDrawing(id: string) {
     await browser.storage.local.remove(id);
 
@@ -81,5 +89,7 @@ export class DrawingStore {
       },
       args: [id],
     });
+
+    await DrawingStore.deleteDrawingFromFavorites(id);
   }
 }

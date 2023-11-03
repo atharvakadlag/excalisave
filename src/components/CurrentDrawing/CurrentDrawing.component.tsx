@@ -21,6 +21,7 @@ export function CurrentDrawing({ drawing }: CurrentDrawingProps) {
         borderBottom: "1px solid #e1e1e1",
         background: "#30a46c",
         borderRadius: "5px 5px 0 0",
+        zIndex: 99999,
       }}
     >
       <Text size="2">
