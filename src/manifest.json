@@ -65,12 +65,9 @@
         "libs/react.production.min.js",
         "libs/react-dom.production.min.js",
         "libs/excalidraw.production.min.js",
-        "js/contentScript.bundle.js"
+        "js/contentScript.bundle.js",
+        "js/content-scripts/listenDrawingUpdates.bundle.js"
       ]
-    },
-    {
-      "matches": ["https://excalidraw.com/*"],
-      "js": ["js/content-scripts/liste-changes-local-storage.bundle.js"]
     }
   ]
 }

@@ -1,4 +1,3 @@
-import type { Browser } from "webextension-polyfill-ts";
 import {
   MessageType,
   SaveExistentDrawingMessage,
@@ -6,7 +5,7 @@ import {
 } from "../constants/message.types";
 import { convertBlobToBase64Async } from "../lib/utils/blob-to-base64.util";
 import { calculateNewDimensions } from "../lib/utils/calculate-new-dimensions.util";
-const { browser }: { browser: Browser } = require("webextension-polyfill-ts");
+const { browser } = require("webextension-polyfill-ts");
 
 const params = window.__SCRIPT_PARAMS__;
 
@@ -63,7 +62,7 @@ const versionDataState = localStorage.getItem("version-dataState");
         imageBase64,
       },
     } as SaveExistentDrawingMessage | SaveNewDrawingMessage)
-    .then((_response) => {
+    .then((_response: any) => {
       // console.info(`Message ${messageType} sent successfully.`, response);
     });
 

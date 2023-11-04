@@ -39,12 +39,12 @@ export function Drawing(props: DrawingProps) {
 
   const handleRenameDrawing = () => {
     setEditModalOpen(false);
-    props?.onRenameDrawing(props.id, newName);
+    props.onRenameDrawing?.(props.id, newName);
   };
 
   const handleDeleteDrawing = () => {
     setDeleteModalOpen(false);
-    props?.onDeleteDrawing(props.id);
+    props.onDeleteDrawing?.(props.id);
   };
 
   return (
@@ -105,15 +105,15 @@ export function Drawing(props: DrawingProps) {
               <DropdownMenu.Item
                 onClick={() => {
                   if (!props.favorite) {
-                    props?.onAddToFavorites(props.id);
+                    props.onAddToFavorites?.(props.id);
                   } else {
-                    props?.onRemoveFromFavorites(props.id);
+                    props.onRemoveFromFavorites?.(props.id);
                   }
                 }}
               >
                 {props.favorite ? "Remove from favorites" : "Add to favorites"}
               </DropdownMenu.Item>
-              <DropdownMenu.Item>Add to folder</DropdownMenu.Item>
+              {/* <DropdownMenu.Item>Add to folder</DropdownMenu.Item> */}
               <DropdownMenu.Separator />
               <DropdownMenu.Item
                 // shortcut="⌘ ⌫"

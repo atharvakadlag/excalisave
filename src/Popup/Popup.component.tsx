@@ -18,6 +18,7 @@ import { browser } from "webextension-polyfill-ts";
 import { CurrentDrawing } from "../components/CurrentDrawing/CurrentDrawing.component";
 import { Drawing } from "../components/Drawing/Drawing.component";
 import { NavBar } from "../components/NavBar/Navbar.component";
+import { Placeholder } from "../components/Placeholder/Placeholder.component";
 import { Sidebar } from "../components/Sidebar/Sidebar.component";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { DrawingStore } from "../lib/drawing-store";
@@ -26,7 +27,6 @@ import "./Popup.styles.scss";
 import { useCurrentDrawingId } from "./hooks/useCurrentDrawing.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
-import { Placeholder } from "../components/Placeholder/Placeholder.component";
 
 const Popup: React.FC = () => {
   const [drawings, setDrawings] = React.useState<IDrawing[]>([]);
@@ -241,7 +241,7 @@ const Popup: React.FC = () => {
             </TextField.Root>
           }
           CurrentItemButton={
-            currentDrawingId && (
+            currentDrawing && (
               <Button color="green" onClick={handleSaveCurrentDrawing}>
                 <BookmarkFilledIcon width="16" height="16" /> Save current
               </Button>
@@ -281,6 +281,8 @@ const Popup: React.FC = () => {
                         isCurrent={currentDrawingId === drawing.id}
                         img={drawing.imageBase64}
                         onRenameDrawing={onRenameDrawing}
+                        onAddToFavorites={handleAddToFavorites}
+                        onRemoveFromFavorites={handleRemoveFromFavorites}
                         onDeleteDrawing={onDeleteDrawing}
                       />
                     ))}
@@ -315,10 +317,13 @@ const Popup: React.FC = () => {
                           id={drawing.id}
                           index={index}
                           name={drawing.name}
+                          favorite={favorites.includes(drawing.id)}
                           onClick={handleLoadItem}
                           isCurrent={currentDrawingId === drawing.id}
                           img={drawing.imageBase64}
                           onRenameDrawing={onRenameDrawing}
+                          onAddToFavorites={handleAddToFavorites}
+                          onRemoveFromFavorites={handleRemoveFromFavorites}
                           onDeleteDrawing={onDeleteDrawing}
                         />
                       ))}

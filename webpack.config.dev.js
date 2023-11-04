@@ -22,9 +22,18 @@ const extensionReloaderPlugin = new ExtensionReloader({
   port: 9090,
   reloadPage: true,
   entries: {
-    contentScript: "contentScript",
+    contentScript: [
+      "contentScript",
+      "execute-scripts/sendDrawingDataToSave",
+      "content-scripts/listenDrawingUpdates",
+    ],
     background: "background",
-    extensionPage: ["popup", "options", "sendDrawingDataToSave"],
+    extensionPage: [
+      "popup",
+      "options",
+      "execute-scripts/sendDrawingDataToSave",
+      "content-scripts/listenDrawingUpdates",
+    ],
   },
 });
 
@@ -48,10 +57,10 @@ module.exports = {
       "execute-scripts",
       "send-drawing-data-to-save.ts"
     ),
-    "content-scripts/liste-changes-local-storage": path.join(
+    "content-scripts/listenDrawingUpdates": path.join(
       sourcePath,
       "ContentScript",
-      "listen-localstorage-changes.ts"
+      "listenDrawingUpdates.ts"
     ),
     contentScript: path.join(sourcePath, "ContentScript", "index.ts"),
     popup: path.join(sourcePath, "Popup", "index.tsx"),
@@ -191,7 +200,6 @@ module.exports = {
     // plugin to enable browser reloading in development mode
     extensionReloaderPlugin,
   ],
-
   optimization: {
     minimize: false,
   },

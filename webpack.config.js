@@ -52,6 +52,11 @@ module.exports = {
       "execute-scripts",
       "send-drawing-data-to-save.ts"
     ),
+    "content-scripts/listenDrawingUpdates": path.join(
+      sourcePath,
+      "ContentScript",
+      "listenDrawingUpdates.ts"
+    ),
     contentScript: path.join(sourcePath, "ContentScript", "index.ts"),
     popup: path.join(sourcePath, "Popup", "index.tsx"),
     options: path.join(sourcePath, "Options", "index.tsx"),
@@ -167,7 +172,7 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: "src/assets", to: "assets" },
-        { from: "src/external-libs", to: "libs" },
+        { from: "src/external-libs/excalidraw.production.min.js", to: "libs" },
         { from: "node_modules/react/umd/react.production.min.js", to: "libs" },
         {
           from: "node_modules/react-dom/umd/react-dom.production.min.js",
@@ -190,12 +195,13 @@ module.exports = {
       ],
     }),
   ],
-
   optimization: {
     minimize: true,
     minimizer: [
       new TerserPlugin({
         parallel: true,
+        // Already minimized, and generates error if minified again.
+        exclude: /excalidraw\.production\.min\.js/,
         terserOptions: {
           format: {
             comments: false,
