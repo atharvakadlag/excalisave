@@ -6,6 +6,7 @@ declare global {
   interface Window {
     __SCRIPT_PARAMS__: Record<string, any>;
     ExcalidrawLib: typeof ExcalidrawLib;
+    dbConnection: IDBDatabase;
   }
 }
 

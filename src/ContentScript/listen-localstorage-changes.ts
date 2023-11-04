@@ -5,8 +5,19 @@ import {
 import { convertBlobToBase64Async } from "../lib/utils/blob-to-base64.util";
 import { calculateNewDimensions } from "../lib/utils/calculate-new-dimensions.util";
 const { browser } = require("webextension-polyfill-ts");
+import { createStore, getMany } from "idb-keyval";
+import type {
+  ExcalidrawElement,
+  ExcalidrawImageElement,
+} from "@excalidraw/excalidraw/types/element/types";
+import type {
+  BinaryFiles,
+  BinaryFileData,
+} from "@excalidraw/excalidraw/types/types";
 
 let prevVersionFiles = localStorage.getItem("version-files");
+
+const filesStore = createStore("files-db", "files-store");
 
 setInterval(async () => {
   const currentVersionFiles = localStorage.getItem("version-files");
@@ -22,12 +33,35 @@ setInterval(async () => {
     const versionFiles = localStorage.getItem("version-files");
     const versionDataState = localStorage.getItem("version-dataState");
 
+    const elements = JSON.parse(excalidraw) as ExcalidrawElement[];
+
+    const imageFileIds = elements
+      .filter((item): item is ExcalidrawImageElement => item.type === "image")
+      .map((item) => item.fileId);
+
+    let files: BinaryFiles = {};
+
+    try {
+      const response = await getMany<BinaryFileData | undefined>(
+        imageFileIds,
+        filesStore
+      );
+
+      response.forEach((item) => {
+        if (item) {
+          files[item.id] = item;
+        }
+      });
+    } catch (error) {
+      console.error("Error retrieving files from IndexedDB", error);
+    }
+
     const blob = await window.ExcalidrawLib.exportToBlob({
-      elements: JSON.parse(excalidraw),
+      elements,
       getDimensions: (width, height) => {
         return calculateNewDimensions(width, height);
       },
-      files: {},
+      files,
       appState: JSON.parse(excalidrawState),
     });
 
