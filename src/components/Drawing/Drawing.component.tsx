@@ -15,16 +15,15 @@ import {
 } from "@radix-ui/themes";
 import React, { useState } from "react";
 import "./Drawing.styles.scss";
+import { IDrawing } from "../../interfaces/drawing.interface";
 
 const DialogDescription = Dialog.Description as any;
 
 type DrawingProps = {
-  id: string;
-  name: string;
-  img?: string;
   favorite?: boolean;
   index: number;
   isCurrent: boolean;
+  drawing: IDrawing;
   onClick: (id: string) => void;
   onRenameDrawing?: (id: string, newName: string) => void;
   onDeleteDrawing?: (id: string) => void;
@@ -33,18 +32,18 @@ type DrawingProps = {
 };
 
 export function Drawing(props: DrawingProps) {
-  const [newName, setNewName] = useState(props.name);
+  const [newName, setNewName] = useState(props.drawing.name);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   const handleRenameDrawing = () => {
     setEditModalOpen(false);
-    props.onRenameDrawing?.(props.id, newName);
+    props.onRenameDrawing?.(props.drawing.id, newName);
   };
 
   const handleDeleteDrawing = () => {
     setDeleteModalOpen(false);
-    props.onDeleteDrawing?.(props.id);
+    props.onDeleteDrawing?.(props.drawing.id);
   };
 
   return (
@@ -52,15 +51,16 @@ export function Drawing(props: DrawingProps) {
       <Flex direction="column" gap="2" position={"relative"}>
         <img
           className="Drawing__image"
-          onClick={() => props.onClick(props.id)}
+          onClick={() => props.onClick(props.drawing.id)}
           loading={props.index < 4 ? "eager" : "lazy"}
           style={{
             boxShadow: props.isCurrent ? "0px 0px 0px 2px #30a46c" : undefined,
             position: "relative",
+            backgroundColor: props.drawing.viewBackgroundColor || "#fff",
           }}
           src={
-            props.img
-              ? props.img
+            props.drawing.imageBase64
+              ? props.drawing.imageBase64
               : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
           }
         />
@@ -73,13 +73,13 @@ export function Drawing(props: DrawingProps) {
               whiteSpace: "nowrap",
               maxWidth: "140px",
             }}
-            title={props.name}
+            title={props.drawing.name}
             color="gray"
             as="p"
             size="1"
             weight="medium"
           >
-            {props.name}
+            {props.drawing.name}
           </Text>
           {props.favorite === true && (
             <HeartFilledIcon
@@ -105,9 +105,9 @@ export function Drawing(props: DrawingProps) {
               <DropdownMenu.Item
                 onClick={() => {
                   if (!props.favorite) {
-                    props.onAddToFavorites?.(props.id);
+                    props.onAddToFavorites?.(props.drawing.id);
                   } else {
-                    props.onRemoveFromFavorites?.(props.id);
+                    props.onRemoveFromFavorites?.(props.drawing.id);
                   }
                 }}
               >
@@ -137,7 +137,8 @@ export function Drawing(props: DrawingProps) {
               <Dialog.Title size={"4"}>Delete Drawing</Dialog.Title>
 
               <DialogDescription size="2">
-                Are you sure you want to delete <b>{props.name}</b> drawing?
+                Are you sure you want to delete <b>{props.drawing.name}</b>{" "}
+                drawing?
               </DialogDescription>
 
               <Flex gap="3" mt="4" justify="end">
@@ -167,7 +168,7 @@ export function Drawing(props: DrawingProps) {
               <Dialog.Title size={"4"}>Rename Drawing</Dialog.Title>
 
               <DialogDescription size="2">
-                Edit <b>{props.name}</b> drawing:
+                Edit <b>{props.drawing.name}</b> drawing:
               </DialogDescription>
 
               <Flex direction="column" mt="3">

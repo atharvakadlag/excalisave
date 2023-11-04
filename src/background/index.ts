@@ -2,15 +2,12 @@ import { browser } from "webextension-polyfill-ts";
 import {
   MessageType,
   SaveNewDrawingMessage,
-  SaveExistentDrawingMessage,
+  SaveDrawingMessage,
 } from "../constants/message.types";
 import { IDrawing } from "../interfaces/drawing.interface";
 
 browser.runtime.onMessage.addListener(
-  async (
-    message: SaveExistentDrawingMessage | SaveNewDrawingMessage,
-    _sender: any
-  ) => {
+  async (message: SaveDrawingMessage | SaveNewDrawingMessage, _sender: any) => {
     console.log("Mesage brackground", message);
     if (!message || !message.type) return;
 
@@ -24,6 +21,7 @@ browser.runtime.onMessage.addListener(
             name: message.payload.name,
             createdAt: new Date().toISOString(),
             imageBase64: message.payload.imageBase64,
+            viewBackgroundColor: message.payload.viewBackgroundColor,
             data: {
               excalidraw: message.payload.excalidraw,
               excalidrawState: message.payload.excalidrawState,
@@ -34,7 +32,7 @@ browser.runtime.onMessage.addListener(
         });
         break;
 
-      case MessageType.SAVE_EXISTENT_DRAWING:
+      case MessageType.SAVE_DRAWING:
         const exitentDrawing = (await browser.storage.local.get(id))[
           id
         ] as IDrawing;
@@ -44,17 +42,28 @@ browser.runtime.onMessage.addListener(
           return;
         }
 
-        await browser.storage.local.set({
-          [id]: {
-            ...exitentDrawing,
-            imageBase64: message.payload.imageBase64,
-            data: {
-              excalidraw: message.payload.excalidraw,
-              excalidrawState: message.payload.excalidrawState,
-              versionFiles: message.payload.versionFiles,
-              versionDataState: message.payload.versionDataState,
-            },
+        const newData: IDrawing = {
+          ...exitentDrawing,
+          name: message.payload.name || exitentDrawing.name,
+          imageBase64:
+            message.payload.imageBase64 || exitentDrawing.imageBase64,
+          viewBackgroundColor:
+            message.payload.viewBackgroundColor ||
+            exitentDrawing.viewBackgroundColor,
+          data: {
+            excalidraw: message.payload.excalidraw,
+            excalidrawState: message.payload.excalidrawState,
+            versionFiles: message.payload.versionFiles,
+            versionDataState: message.payload.versionDataState,
           },
+        };
+
+        if (!message.payload.imageBase64) {
+          console.log("Nueva data", newData);
+        }
+
+        await browser.storage.local.set({
+          [id]: newData,
         });
         break;
       default:

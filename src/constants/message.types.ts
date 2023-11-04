@@ -1,7 +1,9 @@
+import { DrawingDataState } from "../interfaces/drawing-data-state.interface";
+
 export enum MessageType {
   // For background:
-  SAVE_NEW_DRAWING = "SAVE_DRAWING",
-  SAVE_EXISTENT_DRAWING = "SAVE_EXISTENT_DRAWING",
+  SAVE_DRAWING = "SAVE_DRAWING",
+  SAVE_NEW_DRAWING = "SAVE_NEW_DRAWING",
 
   // For content scripts:
   GET_CURRENT_DRAWING_ID = "GET_CURRENT_DRAWING_ID",
@@ -19,20 +21,22 @@ export type SaveNewDrawingMessage = {
     excalidrawState: string;
     versionFiles: string;
     versionDataState: string;
-    imageBase64: string;
+    imageBase64?: DrawingDataState["imageBase64"];
+    viewBackgroundColor?: DrawingDataState["viewBackgroundColor"];
   };
 };
 
-export type SaveExistentDrawingMessage = {
-  type: MessageType.SAVE_EXISTENT_DRAWING;
+export type SaveDrawingMessage = {
+  type: MessageType.SAVE_DRAWING;
   payload: {
     id: string;
-    name: string;
+    name?: string;
     excalidraw: string;
     excalidrawState: string;
     versionFiles: string;
     versionDataState: string;
-    imageBase64: string;
+    imageBase64?: DrawingDataState["imageBase64"];
+    viewBackgroundColor?: DrawingDataState["viewBackgroundColor"];
   };
 };
 

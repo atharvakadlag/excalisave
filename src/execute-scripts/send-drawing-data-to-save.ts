@@ -1,70 +1,53 @@
 import {
+  getDrawingDataState,
+  getScriptParams,
+} from "../ContentScript/content-script.utils";
+import {
   MessageType,
-  SaveExistentDrawingMessage,
+  SaveDrawingMessage,
   SaveNewDrawingMessage,
 } from "../constants/message.types";
-import { convertBlobToBase64Async } from "../lib/utils/blob-to-base64.util";
-import { calculateNewDimensions } from "../lib/utils/calculate-new-dimensions.util";
 const { browser } = require("webextension-polyfill-ts");
 
-const params = window.__SCRIPT_PARAMS__;
-
-if (!params.saveCurrent && (!params?.name || !params?.id)) {
-  throw new Error(
-    'Error trying to send SAVE_DRAWING message: "name" is missing'
-  );
-}
-
-const currentId = localStorage.getItem("__drawing_id");
-const excalidraw = localStorage.getItem("excalidraw");
-const excalidrawState = localStorage.getItem("excalidraw-state");
-const versionFiles = localStorage.getItem("version-files");
-const versionDataState = localStorage.getItem("version-dataState");
+type ScriptParams = {
+  name: string;
+  id: string;
+};
 
 (async () => {
-  if (params.saveCurrent && !currentId) {
+  const params = getScriptParams<ScriptParams | undefined>();
+
+  const saveAsNew = !!params;
+
+  if (saveAsNew && (!params?.id || !params?.name)) {
     throw new Error(
-      'Error trying to send SAVE_DRAWING message: currentId "__drawing_id" is missing'
+      'Error trying to send SAVE_DRAWING message: "name" is missing'
     );
   }
 
-  const blob = await window.ExcalidrawLib.exportToBlob({
-    elements: JSON.parse(excalidraw),
-    getDimensions: (width, height) => {
-      return calculateNewDimensions(width, height);
+  const drawingId = saveAsNew
+    ? params.id
+    : localStorage.getItem("__drawing_id");
+
+  if (!drawingId) {
+    throw new Error("Drawing id not found. Could not send drawing message.");
+  }
+
+  const drawingDataState = await getDrawingDataState();
+
+  browser.runtime.sendMessage({
+    type: saveAsNew ? MessageType.SAVE_NEW_DRAWING : MessageType.SAVE_DRAWING,
+    payload: {
+      id: drawingId,
+      name: saveAsNew ? params.name : undefined,
+      excalidraw: drawingDataState.excalidraw,
+      excalidrawState: drawingDataState.excalidrawState,
+      versionFiles: drawingDataState.versionFiles,
+      versionDataState: drawingDataState.versionDataState,
+      imageBase64: drawingDataState.imageBase64,
+      viewBackgroundColor: drawingDataState.viewBackgroundColor,
     },
-    // mimeType: 'image/jpeg',
-    // quality: 0.01,
-    // TODO: Load files from indexDB
-    files: {},
-    appState: JSON.parse(excalidrawState),
-  });
+  } as SaveDrawingMessage | SaveNewDrawingMessage);
 
-  // Save Blob
-  const imageBase64 = await convertBlobToBase64Async(blob);
-
-  const messageType = params.saveCurrent
-    ? MessageType.SAVE_EXISTENT_DRAWING
-    : MessageType.SAVE_NEW_DRAWING;
-  const finalId = params.saveCurrent ? currentId : params.id;
-
-  // Send the value back to the extension
-  browser.runtime
-    .sendMessage({
-      type: messageType,
-      payload: {
-        excalidraw,
-        excalidrawState,
-        versionFiles,
-        versionDataState,
-        id: finalId,
-        name: params.name,
-        imageBase64,
-      },
-    } as SaveExistentDrawingMessage | SaveNewDrawingMessage)
-    .then((_response: any) => {
-      // console.info(`Message ${messageType} sent successfully.`, response);
-    });
-
-  localStorage.setItem("__drawing_id", finalId);
+  saveAsNew && localStorage.setItem("__drawing_id", drawingId);
 })();

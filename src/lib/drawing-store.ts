@@ -33,6 +33,45 @@ export class DrawingStore {
     });
   }
 
+  static async loadDrawing(drawingId: string) {
+    const activeTab = await TabUtils.getActiveTab();
+
+    if (!activeTab) {
+      console.error("No active tab found");
+
+      return;
+    }
+
+    // This workaround is to pass params to script, it's ugly but it works
+    await browser.scripting.executeScript({
+      target: { tabId: activeTab.id },
+      func: (drawingId) => {
+        window.__SCRIPT_PARAMS__ = { id: drawingId };
+      },
+      args: [drawingId],
+    });
+
+    await browser.scripting.executeScript({
+      target: { tabId: activeTab.id },
+      files: ["./js/execute-scripts/loadDrawing.bundle.js"],
+    });
+  }
+
+  static async newDrawing() {
+    const activeTab = await TabUtils.getActiveTab();
+
+    if (!activeTab) {
+      console.error("No active tab found");
+
+      return;
+    }
+
+    await browser.scripting.executeScript({
+      target: { tabId: activeTab.id },
+      files: ["./js/execute-scripts/newDrawing.bundle.js"],
+    });
+  }
+
   /**
    * Saves the current drawing the user is working on.
    * No params needed, it takes the id to update from the localStorage.
@@ -45,15 +84,6 @@ export class DrawingStore {
 
       return;
     }
-
-    // This workaround is to pass params to script, it's ugly but it works
-    await browser.scripting.executeScript({
-      target: { tabId: activeTab.id },
-      func: () => {
-        window.__SCRIPT_PARAMS__ = { saveCurrent: true };
-      },
-      args: [],
-    });
 
     await browser.scripting.executeScript({
       target: { tabId: activeTab.id },

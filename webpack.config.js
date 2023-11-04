@@ -52,6 +52,16 @@ module.exports = {
       "execute-scripts",
       "send-drawing-data-to-save.ts"
     ),
+    "execute-scripts/loadDrawing": path.join(
+      sourcePath,
+      "execute-scripts",
+      "loadDrawing.ts"
+    ),
+    "execute-scripts/newDrawing": path.join(
+      sourcePath,
+      "execute-scripts",
+      "newDrawing.ts"
+    ),
     "content-scripts/listenDrawingUpdates": path.join(
       sourcePath,
       "ContentScript",

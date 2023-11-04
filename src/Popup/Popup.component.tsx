@@ -1,11 +1,9 @@
 import {
-  BookmarkFilledIcon,
   CrossCircledIcon,
   HeartFilledIcon,
   MagnifyingGlassIcon,
 } from "@radix-ui/react-icons";
 import {
-  Button,
   Flex,
   Grid,
   IconButton,
@@ -15,7 +13,6 @@ import {
 } from "@radix-ui/themes";
 import React, { useEffect, useState } from "react";
 import { browser } from "webextension-polyfill-ts";
-import { CurrentDrawing } from "../components/CurrentDrawing/CurrentDrawing.component";
 import { Drawing } from "../components/Drawing/Drawing.component";
 import { NavBar } from "../components/NavBar/Navbar.component";
 import { Placeholder } from "../components/Placeholder/Placeholder.component";
@@ -25,6 +22,7 @@ import { DrawingStore } from "../lib/drawing-store";
 import { TabUtils } from "../lib/utils/tab.utils";
 import "./Popup.styles.scss";
 import { useCurrentDrawingId } from "./hooks/useCurrentDrawing.hook";
+import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 
@@ -36,6 +34,7 @@ const Popup: React.FC = () => {
   const { currentDrawingId, setCurrentDrawingId } = useCurrentDrawingId();
   const [sidebarSelected, setSidebarSelected] = useState("");
   const { getRestorePoint, setRestorePoint } = useRestorePoint();
+  const { loading, startLoading } = useDrawingLoading();
 
   useEffect(() => {
     getRestorePoint()
@@ -113,41 +112,27 @@ const Popup: React.FC = () => {
     }
   };
 
-  const handleLoadItem = async (id: string) => {
-    const drawing = drawings.find((drawing) => drawing.id === id);
-    const activeTab = await TabUtils.getActiveTab();
+  const handleLoadItem = async (loadDrawingId: string) => {
+    if (!loading && loadDrawingId !== currentDrawing?.id) {
+      startLoading();
+      const drawing = drawings.find((drawing) => drawing.id === loadDrawingId);
+      const activeTab = await TabUtils.getActiveTab();
 
-    if (!activeTab || !drawing) {
-      console.error("Error loading drawing: No active tab or drawing found", {
-        activeTab,
-        drawing,
-      });
+      if (!activeTab || !drawing) {
+        console.error("Error loading drawing: No active tab or drawing found", {
+          activeTab,
+          drawing,
+        });
 
-      return;
+        return;
+      }
+
+      await DrawingStore.loadDrawing(loadDrawingId);
+
+      setCurrentDrawingId(loadDrawingId);
+      // TODO: Activate this to avoid fast switching errors(or block switching for a few milis)
+      // window.close();
     }
-
-    await browser.scripting.executeScript({
-      target: { tabId: activeTab.id },
-      func: (drawing: IDrawing) => {
-        localStorage.setItem("excalidraw", drawing.data["excalidraw"]);
-        localStorage.setItem(
-          "excalidraw-state",
-          drawing.data["excalidrawState"]
-        );
-        localStorage.setItem("version-files", drawing.data["versionFiles"]);
-        localStorage.setItem(
-          "version-dataState",
-          drawing.data["versionDataState"]
-        );
-        localStorage.setItem("__drawing_id", drawing["id"]);
-        location.reload();
-      },
-      args: [drawing],
-    });
-
-    setCurrentDrawingId(id);
-    // TODO: Activate this to avoid fast switching errors(or block switching for a few milis)
-    // window.close();
   };
 
   const handleCreateNewDrawing = async (name: string) => {
@@ -157,6 +142,12 @@ const Popup: React.FC = () => {
 
   const handleSaveCurrentDrawing = async () => {
     await DrawingStore.saveCurrentDrawing();
+    window.close();
+  };
+
+  const handleNewDrawing = async () => {
+    await DrawingStore.newDrawing();
+    setCurrentDrawingId(undefined);
     window.close();
   };
 
@@ -180,7 +171,11 @@ const Popup: React.FC = () => {
         });
       case "Results":
         return drawings.filter((drawing) => {
-          return drawing.name.toLowerCase().includes(searchTerm.toLowerCase());
+          // TODO: Fix this, this is not enecssary
+          return (
+            drawing.name &&
+            drawing.name.toLowerCase().includes(searchTerm.toLowerCase())
+          );
         });
       default:
         return drawings;
@@ -197,14 +192,15 @@ const Popup: React.FC = () => {
       }}
     >
       <section className="Popup">
-        {currentDrawing && <CurrentDrawing drawing={currentDrawing} />}
         <NavBar
           onCreateNewDrawing={handleCreateNewDrawing}
+          onNewDrawing={handleNewDrawing}
+          currentDrawing={currentDrawing}
+          onSaveDrawing={handleSaveCurrentDrawing}
           SearchComponent={
             <TextField.Root
               style={{
-                width: "240px",
-                maxWidth: "240px",
+                width: "183px",
               }}
             >
               <TextField.Slot>
@@ -240,13 +236,22 @@ const Popup: React.FC = () => {
               </TextField.Slot>
             </TextField.Root>
           }
-          CurrentItemButton={
-            currentDrawing && (
-              <Button color="green" onClick={handleSaveCurrentDrawing}>
-                <BookmarkFilledIcon width="16" height="16" /> Save current
-              </Button>
-            )
-          }
+          // CurrentItemButton={
+          //   currentDrawing && (
+          //     <Button
+          //       disabled={loading}
+          //       color="green"
+          //       onClick={handleSaveCurrentDrawing}
+          //     >
+          //       {loading ? (
+          //         <ReloadIcon width="16" height="16" />
+          //       ) : (
+          //         <BookmarkFilledIcon width="16" height="16" />
+          //       )}
+          //       {loading ? "Loading..." : "Save current"}
+          //     </Button>
+          //   )
+          // }
         />
         <Flex
           style={{
@@ -273,13 +278,11 @@ const Popup: React.FC = () => {
                     {filteredDrawings.map((drawing, index) => (
                       <Drawing
                         key={drawing.id}
-                        id={drawing.id}
                         index={index}
-                        name={drawing.name}
+                        drawing={drawing}
                         onClick={handleLoadItem}
                         favorite={true}
                         isCurrent={currentDrawingId === drawing.id}
-                        img={drawing.imageBase64}
                         onRenameDrawing={onRenameDrawing}
                         onAddToFavorites={handleAddToFavorites}
                         onRemoveFromFavorites={handleRemoveFromFavorites}
@@ -314,13 +317,11 @@ const Popup: React.FC = () => {
                       {filteredDrawings.map((drawing, index) => (
                         <Drawing
                           key={drawing.id}
-                          id={drawing.id}
                           index={index}
-                          name={drawing.name}
+                          drawing={drawing}
                           favorite={favorites.includes(drawing.id)}
                           onClick={handleLoadItem}
                           isCurrent={currentDrawingId === drawing.id}
-                          img={drawing.imageBase64}
                           onRenameDrawing={onRenameDrawing}
                           onAddToFavorites={handleAddToFavorites}
                           onRemoveFromFavorites={handleRemoveFromFavorites}
@@ -350,13 +351,11 @@ const Popup: React.FC = () => {
                   {filteredDrawings.map((drawing, index) => (
                     <Drawing
                       key={drawing.id}
-                      id={drawing.id}
+                      drawing={drawing}
                       index={index}
                       onClick={handleLoadItem}
                       isCurrent={currentDrawingId === drawing.id}
-                      name={drawing.name}
                       favorite={favorites.includes(drawing.id)}
-                      img={drawing.imageBase64}
                       onRenameDrawing={onRenameDrawing}
                       onAddToFavorites={handleAddToFavorites}
                       onRemoveFromFavorites={handleRemoveFromFavorites}

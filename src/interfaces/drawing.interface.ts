@@ -7,7 +7,8 @@ export interface IDrawing {
   id: string;
   name: string;
   createdAt: string;
-  imageBase64: string;
+  imageBase64?: string;
+  viewBackgroundColor?: string;
   data: {
     excalidraw: string;
     excalidrawState: string;
