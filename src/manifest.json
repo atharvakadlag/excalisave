@@ -11,7 +11,13 @@
     "128": "assets/icons/favicon-128.png"
   },
   "homepage_url": "https://github.com/atharvakadlag/excalisave",
-  "permissions": ["activeTab", "storage", "scripting", "unlimitedStorage"],
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting",
+    "unlimitedStorage"
+  ],
 
   "__chrome|firefox__author": "abhijithvijayan",
   "__opera__developer": {
@@ -67,6 +73,7 @@
       "matches": ["https://excalidraw.com/*"]
     }
   ],
+  "host_permissions": ["https://excalidraw.com/*"],
   "content_scripts": [
     {
       "matches": ["https://excalidraw.com/*"],

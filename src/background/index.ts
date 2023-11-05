@@ -6,6 +6,33 @@ import {
 } from "../constants/message.types";
 import { IDrawing } from "../interfaces/drawing.interface";
 
+browser.runtime.onInstalled.addListener(async () => {
+  console.log("onInstalled...");
+
+  console.log(
+    "Content scripts",
+    (browser.runtime.getManifest() as any).content_scripts
+  );
+  for (const cs of (browser.runtime.getManifest() as any).content_scripts) {
+    for (const tab of await browser.tabs.query({ url: cs.matches })) {
+      browser.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: cs.js,
+      });
+    }
+  }
+
+  // const tabs = await browser.tabs.query({
+  //   url: "https://excalidraw.com/*",
+  // });
+
+  // await Promise.all(
+  //   tabs.map((tab) => {
+  //     return browser.tabs.reload(tab.id);
+  //   })
+  // );
+});
+
 browser.runtime.onMessage.addListener(
   async (message: SaveDrawingMessage | SaveNewDrawingMessage, _sender: any) => {
     console.log("Mesage brackground", message);

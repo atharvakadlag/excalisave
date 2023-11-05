@@ -3,12 +3,13 @@ import {
   getExcalidrawEmptyDataState,
 } from "../ContentScript/content-script.utils";
 import { MessageType, SaveDrawingMessage } from "../constants/message.types";
+import { DRAWING_ID_KEY_LS } from "../lib/constants";
 import { As } from "../lib/types.utils";
 const { browser } = require("webextension-polyfill-ts");
 
 (async () => {
   // Save data before load new drawing if there is a current drawing
-  const currentDrawingId = localStorage.getItem("__drawing_id");
+  const currentDrawingId = localStorage.getItem(DRAWING_ID_KEY_LS);
   if (currentDrawingId) {
     const drawingDataState = await getDrawingDataState();
 
@@ -35,7 +36,7 @@ const { browser } = require("webextension-polyfill-ts");
     localStorage.setItem("excalidraw-state", emptyDataState.excalidrawState);
     localStorage.setItem("version-files", emptyDataState.versionFiles);
     localStorage.setItem("version-dataState", emptyDataState.versionDataState);
-    localStorage.removeItem("__drawing_id");
+    localStorage.removeItem(DRAWING_ID_KEY_LS);
   });
 
   // Reload page to apply changes

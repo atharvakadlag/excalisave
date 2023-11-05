@@ -41,7 +41,8 @@ const Popup: React.FC = () => {
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const { currentDrawingId, setCurrentDrawingId } = useCurrentDrawingId();
+  const { currentDrawingId, inExcalidrawPage, setCurrentDrawingId } =
+    useCurrentDrawingId();
   const drawingIdToSwitch = useRef<string | undefined>(undefined);
   const [sidebarSelected, setSidebarSelected] = useState("");
   const { getRestorePoint, setRestorePoint } = useRestorePoint();
@@ -175,6 +176,8 @@ const Popup: React.FC = () => {
   );
 
   const handleLoadItemWithConfirm = async (loadDrawingId: string) => {
+    if (!inExcalidrawPage) return;
+
     if (!currentDrawing && (await DrawingStore.hasUnsavedChanges())) {
       drawingIdToSwitch.current = loadDrawingId;
       setIsConfirmSwitchDialogOpen(true);
@@ -216,6 +219,7 @@ const Popup: React.FC = () => {
           onCreateNewDrawing={handleCreateNewDrawing}
           onNewDrawing={handleNewDrawing}
           isLoading={loading}
+          inExcalidrawPage={inExcalidrawPage}
           currentDrawing={currentDrawing}
           onSaveDrawing={handleSaveCurrentDrawing}
           SearchComponent={
@@ -285,6 +289,7 @@ const Popup: React.FC = () => {
                         key={drawing.id}
                         index={index}
                         drawing={drawing}
+                        inExcalidrawPage={inExcalidrawPage}
                         onClick={handleLoadItemWithConfirm}
                         favorite={true}
                         isCurrent={currentDrawingId === drawing.id}
@@ -324,6 +329,7 @@ const Popup: React.FC = () => {
                           key={drawing.id}
                           index={index}
                           drawing={drawing}
+                          inExcalidrawPage={inExcalidrawPage}
                           favorite={favorites.includes(drawing.id)}
                           onClick={handleLoadItemWithConfirm}
                           isCurrent={currentDrawingId === drawing.id}
@@ -366,6 +372,7 @@ const Popup: React.FC = () => {
                         key={drawing.id}
                         drawing={drawing}
                         index={index}
+                        inExcalidrawPage={inExcalidrawPage}
                         onClick={handleLoadItemWithConfirm}
                         isCurrent={currentDrawingId === drawing.id}
                         favorite={favorites.includes(drawing.id)}

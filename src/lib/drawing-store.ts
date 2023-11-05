@@ -1,6 +1,7 @@
 import { browser } from "webextension-polyfill-ts";
 import { RandomUtils } from "./utils/random.utils";
 import { TabUtils } from "./utils/tab.utils";
+import { DRAWING_ID_KEY_LS } from "./constants";
 
 type SaveDrawingProps = {
   name: string;
@@ -112,12 +113,12 @@ export class DrawingStore {
 
     await browser.scripting.executeScript({
       target: { tabId: activeTab.id },
-      func: (deleteDrawingId) => {
-        if (localStorage.getItem("__drawing_id") === deleteDrawingId) {
-          localStorage.removeItem("__drawing_id");
+      func: (drawingIdKey, deleteDrawingId) => {
+        if (localStorage.getItem(drawingIdKey) === deleteDrawingId) {
+          localStorage.removeItem(drawingIdKey);
         }
       },
-      args: [id],
+      args: [DRAWING_ID_KEY_LS, id],
     });
 
     await DrawingStore.deleteDrawingFromFavorites(id);
