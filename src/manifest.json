@@ -3,15 +3,20 @@
   "name": "Excalisave",
   "version": "0.0.0",
   "short_name": "Excalisave",
-  "description": "Save and share your excalidraw drawings.",
+  "description": "Save your excalidraw drawings.",
   "icons": {
-    "16": "assets/icons/favicon-16.png",
-    "32": "assets/icons/favicon-32.png",
-    "48": "assets/icons/favicon-48.png",
-    "128": "assets/icons/favicon-128.png"
+    "16": "assets/icons/32.png",
+    "48": "assets/icons/48.png",
+    "128": "assets/icons/128.png"
   },
   "homepage_url": "https://github.com/atharvakadlag/excalisave",
-  "permissions": ["activeTab", "storage", "scripting", "unlimitedStorage"],
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting",
+    "unlimitedStorage"
+  ],
 
   "__chrome|firefox__author": "abhijithvijayan",
   "__opera__developer": {
@@ -28,14 +33,8 @@
   "__opera__minimum_opera_version": "36",
 
   "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "assets/icons/favicon-16.png",
-      "32": "assets/icons/favicon-32.png",
-      "48": "assets/icons/favicon-48.png",
-      "128": "assets/icons/favicon-128.png"
-    },
-    "default_title": "Excalisave"
+    "default_title": "Excalisave",
+    "default_popup": "popup.html"
   },
 
   "commands": {
@@ -67,6 +66,7 @@
       "matches": ["https://excalidraw.com/*"]
     }
   ],
+  "host_permissions": ["https://excalidraw.com/*"],
   "content_scripts": [
     {
       "matches": ["https://excalidraw.com/*"],
@@ -74,7 +74,6 @@
         "libs/react.production.min.js",
         "libs/react-dom.production.min.js",
         "libs/excalidraw.production.min.js",
-        "js/contentScript.bundle.js",
         "js/content-scripts/listenDrawingUpdates.bundle.js"
       ]
     }

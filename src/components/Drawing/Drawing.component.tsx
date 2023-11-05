@@ -1,8 +1,4 @@
-import {
-  DotsHorizontalIcon,
-  HeartFilledIcon,
-  HeartIcon,
-} from "@radix-ui/react-icons";
+import { DotsHorizontalIcon, HeartFilledIcon } from "@radix-ui/react-icons";
 import {
   Box,
   Button,
@@ -14,8 +10,8 @@ import {
   TextField,
 } from "@radix-ui/themes";
 import React, { useState } from "react";
-import "./Drawing.styles.scss";
 import { IDrawing } from "../../interfaces/drawing.interface";
+import "./Drawing.styles.scss";
 
 const DialogDescription = Dialog.Description as any;
 
@@ -23,6 +19,7 @@ type DrawingProps = {
   favorite?: boolean;
   index: number;
   isCurrent: boolean;
+  inExcalidrawPage: boolean;
   drawing: IDrawing;
   onClick: (id: string) => void;
   onRenameDrawing?: (id: string, newName: string) => void;
@@ -116,7 +113,7 @@ export function Drawing(props: DrawingProps) {
               {/* <DropdownMenu.Item>Add to folder</DropdownMenu.Item> */}
               <DropdownMenu.Separator />
               <DropdownMenu.Item
-                // shortcut="⌘ ⌫"
+                disabled={!props.inExcalidrawPage}
                 color="red"
                 onClick={() => setDeleteModalOpen(true)}
               >

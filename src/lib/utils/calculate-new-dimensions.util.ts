@@ -1,7 +1,8 @@
 import { MAX_HEIGHT_THUMBNAIL, MAX_WIDTH_THUMBNAIL } from "../constants";
+import { XLogger } from "../logger";
 
 export function calculateNewDimensions(width: number, height: number) {
-  console.log(
+  XLogger.log(
     "👉 Original Image dimensions:",
     `${Math.round(width)} x ${Math.round(height)}`
   );
@@ -21,7 +22,7 @@ export function calculateNewDimensions(width: number, height: number) {
   width = Math.max(1, Math.round(width / scale));
   height = Math.max(1, Math.round(height / scale));
 
-  console.log(
+  XLogger.log(
     "New Image dimensions",
     `${Math.round(width)} x ${Math.round(height)}`,
     scale

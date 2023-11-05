@@ -32,6 +32,7 @@ import { useCurrentDrawingId } from "./hooks/useCurrentDrawing.hook";
 import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
+import { XLogger } from "../lib/logger";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -41,7 +42,8 @@ const Popup: React.FC = () => {
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const { currentDrawingId, setCurrentDrawingId } = useCurrentDrawingId();
+  const { currentDrawingId, inExcalidrawPage, setCurrentDrawingId } =
+    useCurrentDrawingId();
   const drawingIdToSwitch = useRef<string | undefined>(undefined);
   const [sidebarSelected, setSidebarSelected] = useState("");
   const { getRestorePoint, setRestorePoint } = useRestorePoint();
@@ -105,7 +107,7 @@ const Popup: React.FC = () => {
         },
       });
     } catch (error) {
-      console.error("Error renaming drawing", error);
+      XLogger.error("Error renaming drawing", error);
     }
   };
 
@@ -121,7 +123,7 @@ const Popup: React.FC = () => {
 
       await DrawingStore.deleteDrawing(id);
     } catch (error) {
-      console.error("Error deleting drawing", error);
+      XLogger.error("Error deleting drawing", error);
     }
   };
 
@@ -131,7 +133,7 @@ const Popup: React.FC = () => {
       const activeTab = await TabUtils.getActiveTab();
 
       if (!activeTab) {
-        console.error("Error loading drawing: No active tab or drawing found", {
+        XLogger.error("Error loading drawing: No active tab or drawing found", {
           activeTab,
         });
 
@@ -175,6 +177,8 @@ const Popup: React.FC = () => {
   );
 
   const handleLoadItemWithConfirm = async (loadDrawingId: string) => {
+    if (!inExcalidrawPage) return;
+
     if (!currentDrawing && (await DrawingStore.hasUnsavedChanges())) {
       drawingIdToSwitch.current = loadDrawingId;
       setIsConfirmSwitchDialogOpen(true);
@@ -216,6 +220,7 @@ const Popup: React.FC = () => {
           onCreateNewDrawing={handleCreateNewDrawing}
           onNewDrawing={handleNewDrawing}
           isLoading={loading}
+          inExcalidrawPage={inExcalidrawPage}
           currentDrawing={currentDrawing}
           onSaveDrawing={handleSaveCurrentDrawing}
           SearchComponent={
@@ -285,6 +290,7 @@ const Popup: React.FC = () => {
                         key={drawing.id}
                         index={index}
                         drawing={drawing}
+                        inExcalidrawPage={inExcalidrawPage}
                         onClick={handleLoadItemWithConfirm}
                         favorite={true}
                         isCurrent={currentDrawingId === drawing.id}
@@ -324,6 +330,7 @@ const Popup: React.FC = () => {
                           key={drawing.id}
                           index={index}
                           drawing={drawing}
+                          inExcalidrawPage={inExcalidrawPage}
                           favorite={favorites.includes(drawing.id)}
                           onClick={handleLoadItemWithConfirm}
                           isCurrent={currentDrawingId === drawing.id}
@@ -366,6 +373,7 @@ const Popup: React.FC = () => {
                         key={drawing.id}
                         drawing={drawing}
                         index={index}
+                        inExcalidrawPage={inExcalidrawPage}
                         onClick={handleLoadItemWithConfirm}
                         isCurrent={currentDrawingId === drawing.id}
                         favorite={favorites.includes(drawing.id)}

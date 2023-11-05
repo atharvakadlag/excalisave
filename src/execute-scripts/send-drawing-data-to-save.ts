@@ -7,6 +7,7 @@ import {
   SaveDrawingMessage,
   SaveNewDrawingMessage,
 } from "../constants/message.types";
+import { DRAWING_ID_KEY_LS } from "../lib/constants";
 const { browser } = require("webextension-polyfill-ts");
 
 type ScriptParams = {
@@ -27,7 +28,7 @@ type ScriptParams = {
 
   const drawingId = saveAsNew
     ? params.id
-    : localStorage.getItem("__drawing_id");
+    : localStorage.getItem(DRAWING_ID_KEY_LS);
 
   if (!drawingId) {
     throw new Error("Drawing id not found. Could not send drawing message.");
@@ -49,5 +50,5 @@ type ScriptParams = {
     },
   } as SaveDrawingMessage | SaveNewDrawingMessage);
 
-  saveAsNew && localStorage.setItem("__drawing_id", drawingId);
+  saveAsNew && localStorage.setItem(DRAWING_ID_KEY_LS, drawingId);
 })();

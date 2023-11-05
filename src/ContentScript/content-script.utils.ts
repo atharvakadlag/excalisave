@@ -4,10 +4,11 @@ import type {
   BinaryFiles,
 } from "@excalidraw/excalidraw/types/types";
 import { createStore, getMany } from "idb-keyval";
+import { DrawingDataState } from "../interfaces/drawing-data-state.interface";
 import type { ExcalidrawDataState } from "../interfaces/excalidraw-data-state.interface";
+import { XLogger } from "../lib/logger";
 import { convertBlobToBase64Async } from "../lib/utils/blob-to-base64.util";
 import { calculateNewDimensions } from "../lib/utils/calculate-new-dimensions.util";
-import { DrawingDataState } from "../interfaces/drawing-data-state.interface";
 
 // Were images are stored: https://github.com/excalidraw/excalidraw/blob/e8def8da8d5fcf9445aebdd996de3fee4cecf7ef/excalidraw-app/data/LocalData.ts#L24
 const filesStore = createStore("files-db", "files-store");
@@ -34,7 +35,7 @@ export async function getDrawingDataState(
       });
     }
   } catch (error) {
-    console.error("Error taking screenshot", error);
+    XLogger.error("Error taking screenshot", error);
   }
 
   return {
@@ -76,7 +77,7 @@ async function takeScreenshot({
       }
     });
   } catch (error) {
-    console.error("Error retrieving files from IndexedDB", error);
+    XLogger.warn("Error retrieving files from IndexedDB", error);
   }
 
   const blob = await window.ExcalidrawLib.exportToBlob({
@@ -90,7 +91,7 @@ async function takeScreenshot({
 
   const imageBase64 = await convertBlobToBase64Async(blob);
 
-  console.log(
+  XLogger.log(
     "📷 Take Screenshoot Took:",
     new Date().getTime() - startTime + "ms"
   );

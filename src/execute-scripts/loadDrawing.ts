@@ -4,6 +4,8 @@ import {
 } from "../ContentScript/content-script.utils";
 import { MessageType, SaveDrawingMessage } from "../constants/message.types";
 import { IDrawing } from "../interfaces/drawing.interface";
+import { DRAWING_ID_KEY_LS } from "../lib/constants";
+import { XLogger } from "../lib/logger";
 import { As } from "../lib/types.utils";
 const { browser } = require("webextension-polyfill-ts");
 
@@ -16,13 +18,13 @@ type ScriptParams = {
 
   const loadDrawingId = params?.id;
   if (!loadDrawingId) {
-    console.info("No drawing id found, could not load");
+    XLogger.info("No drawing id found, could not load");
 
     return;
   }
 
   // Save data before load new drawing if there is a current drawing
-  const currentDrawingId = localStorage.getItem("__drawing_id");
+  const currentDrawingId = localStorage.getItem(DRAWING_ID_KEY_LS);
   if (currentDrawingId) {
     const drawingDataState = await getDrawingDataState();
 
@@ -48,7 +50,7 @@ type ScriptParams = {
   const drawingData = response[loadDrawingId] as IDrawing;
 
   if (!drawingData) {
-    console.error("No drawing data found");
+    XLogger.error("No drawing data found");
 
     return;
   }
@@ -64,7 +66,7 @@ type ScriptParams = {
     localStorage.setItem("excalidraw-state", excalidrawState);
     localStorage.setItem("version-files", versionFiles);
     localStorage.setItem("version-dataState", versionDataState);
-    localStorage.setItem("__drawing_id", loadDrawingId);
+    localStorage.setItem(DRAWING_ID_KEY_LS, loadDrawingId);
   });
 
   // Reload page to apply changes
