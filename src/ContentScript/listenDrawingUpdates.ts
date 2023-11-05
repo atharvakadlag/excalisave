@@ -42,7 +42,6 @@ const timeoutId = setTimeout(() => {
 }, 5000);
 
 window.addEventListener("beforeunload", () => {
-  console.log("Clearing timeout id");
   try {
     clearTimeout(timeoutId);
   } catch {}

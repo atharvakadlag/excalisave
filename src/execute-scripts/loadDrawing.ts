@@ -56,11 +56,16 @@ type ScriptParams = {
   const { excalidraw, excalidrawState, versionFiles, versionDataState } =
     drawingData.data;
 
-  localStorage.setItem("excalidraw", excalidraw);
-  localStorage.setItem("excalidraw-state", excalidrawState);
-  localStorage.setItem("version-files", versionFiles);
-  localStorage.setItem("version-dataState", versionDataState);
-  localStorage.setItem("__drawing_id", loadDrawingId);
+  // Seems Excalidraw saves data to localStorage before reload page(I guess when there is something pending).
+  // To avoid it overwrite our data,  save to localStorage on this event instead.
+  // ! TODO: Probably need to move the logic of saving data before switch to here.
+  window.addEventListener("beforeunload", () => {
+    localStorage.setItem("excalidraw", excalidraw);
+    localStorage.setItem("excalidraw-state", excalidrawState);
+    localStorage.setItem("version-files", versionFiles);
+    localStorage.setItem("version-dataState", versionDataState);
+    localStorage.setItem("__drawing_id", loadDrawingId);
+  });
 
   // Reload page to apply changes
   location.reload();

@@ -1,17 +1,24 @@
 import {
+  BookmarkIcon,
   CrossCircledIcon,
+  ExclamationTriangleIcon,
   HeartFilledIcon,
+  InfoCircledIcon,
   MagnifyingGlassIcon,
 } from "@radix-ui/react-icons";
 import {
+  Button,
+  Callout,
+  Dialog,
   Flex,
   Grid,
   IconButton,
+  Strong,
   Text,
   TextField,
   Theme,
 } from "@radix-ui/themes";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { browser } from "webextension-polyfill-ts";
 import { Drawing } from "../components/Drawing/Drawing.component";
 import { NavBar } from "../components/NavBar/Navbar.component";
@@ -26,15 +33,21 @@ import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 
+const DialogDescription = Dialog.Description as any;
+const CalloutText = Callout.Text as any;
+
 const Popup: React.FC = () => {
   const [drawings, setDrawings] = React.useState<IDrawing[]>([]);
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const { currentDrawingId, setCurrentDrawingId } = useCurrentDrawingId();
+  const drawingIdToSwitch = useRef<string | undefined>(undefined);
   const [sidebarSelected, setSidebarSelected] = useState("");
   const { getRestorePoint, setRestorePoint } = useRestorePoint();
   const { loading, startLoading } = useDrawingLoading();
+  const [isConfirmSwitchDialogOpen, setIsConfirmSwitchDialogOpen] =
+    useState<boolean>(false);
 
   useEffect(() => {
     getRestorePoint()
@@ -115,13 +128,11 @@ const Popup: React.FC = () => {
   const handleLoadItem = async (loadDrawingId: string) => {
     if (!loading && loadDrawingId !== currentDrawing?.id) {
       startLoading();
-      const drawing = drawings.find((drawing) => drawing.id === loadDrawingId);
       const activeTab = await TabUtils.getActiveTab();
 
-      if (!activeTab || !drawing) {
+      if (!activeTab) {
         console.error("Error loading drawing: No active tab or drawing found", {
           activeTab,
-          drawing,
         });
 
         return;
@@ -163,6 +174,15 @@ const Popup: React.FC = () => {
     (drawing) => drawing.id === currentDrawingId
   );
 
+  const handleLoadItemWithConfirm = async (loadDrawingId: string) => {
+    if (!currentDrawing && (await DrawingStore.hasUnsavedChanges())) {
+      drawingIdToSwitch.current = loadDrawingId;
+      setIsConfirmSwitchDialogOpen(true);
+    } else {
+      handleLoadItem(loadDrawingId);
+    }
+  };
+
   const filterDrawings = () => {
     switch (sidebarSelected) {
       case "Favorites":
@@ -195,6 +215,7 @@ const Popup: React.FC = () => {
         <NavBar
           onCreateNewDrawing={handleCreateNewDrawing}
           onNewDrawing={handleNewDrawing}
+          isLoading={loading}
           currentDrawing={currentDrawing}
           onSaveDrawing={handleSaveCurrentDrawing}
           SearchComponent={
@@ -236,22 +257,6 @@ const Popup: React.FC = () => {
               </TextField.Slot>
             </TextField.Root>
           }
-          // CurrentItemButton={
-          //   currentDrawing && (
-          //     <Button
-          //       disabled={loading}
-          //       color="green"
-          //       onClick={handleSaveCurrentDrawing}
-          //     >
-          //       {loading ? (
-          //         <ReloadIcon width="16" height="16" />
-          //       ) : (
-          //         <BookmarkFilledIcon width="16" height="16" />
-          //       )}
-          //       {loading ? "Loading..." : "Save current"}
-          //     </Button>
-          //   )
-          // }
         />
         <Flex
           style={{
@@ -280,7 +285,7 @@ const Popup: React.FC = () => {
                         key={drawing.id}
                         index={index}
                         drawing={drawing}
-                        onClick={handleLoadItem}
+                        onClick={handleLoadItemWithConfirm}
                         favorite={true}
                         isCurrent={currentDrawingId === drawing.id}
                         onRenameDrawing={onRenameDrawing}
@@ -311,7 +316,7 @@ const Popup: React.FC = () => {
                       gapX="3"
                       gapY="5"
                       width="auto"
-                      pb="8"
+                      pb="3"
                       pt="3"
                     >
                       {filteredDrawings.map((drawing, index) => (
@@ -320,7 +325,7 @@ const Popup: React.FC = () => {
                           index={index}
                           drawing={drawing}
                           favorite={favorites.includes(drawing.id)}
-                          onClick={handleLoadItem}
+                          onClick={handleLoadItemWithConfirm}
                           isCurrent={currentDrawingId === drawing.id}
                           onRenameDrawing={onRenameDrawing}
                           onAddToFavorites={handleAddToFavorites}
@@ -345,28 +350,114 @@ const Popup: React.FC = () => {
                 />
               ))}
 
-            {(sidebarSelected === "All" || sidebarSelected === "") && (
-              <>
-                <Grid columns="2" gapX="3" gapY="5" width="auto" pb="8" pt="3">
-                  {filteredDrawings.map((drawing, index) => (
-                    <Drawing
-                      key={drawing.id}
-                      drawing={drawing}
-                      index={index}
-                      onClick={handleLoadItem}
-                      isCurrent={currentDrawingId === drawing.id}
-                      favorite={favorites.includes(drawing.id)}
-                      onRenameDrawing={onRenameDrawing}
-                      onAddToFavorites={handleAddToFavorites}
-                      onRemoveFromFavorites={handleRemoveFromFavorites}
-                      onDeleteDrawing={onDeleteDrawing}
-                    />
-                  ))}
-                </Grid>
-              </>
-            )}
+            {(sidebarSelected === "All" || sidebarSelected === "") &&
+              (filteredDrawings.length > 0 ? (
+                <>
+                  <Grid
+                    columns="2"
+                    gapX="3"
+                    gapY="5"
+                    width="auto"
+                    pb="3"
+                    pt="3"
+                  >
+                    {filteredDrawings.map((drawing, index) => (
+                      <Drawing
+                        key={drawing.id}
+                        drawing={drawing}
+                        index={index}
+                        onClick={handleLoadItemWithConfirm}
+                        isCurrent={currentDrawingId === drawing.id}
+                        favorite={favorites.includes(drawing.id)}
+                        onRenameDrawing={onRenameDrawing}
+                        onAddToFavorites={handleAddToFavorites}
+                        onRemoveFromFavorites={handleRemoveFromFavorites}
+                        onDeleteDrawing={onDeleteDrawing}
+                      />
+                    ))}
+                  </Grid>
+                </>
+              ) : (
+                <Placeholder
+                  icon={<BookmarkIcon width={"30"} height={"30"} />}
+                  message={
+                    <Text size={"2"}>
+                      You don't have drawings saved yet. <br />
+                      Start saving one by clicking on the <Strong>
+                        Save
+                      </Strong>{" "}
+                      button.
+                    </Text>
+                  }
+                />
+              ))}
           </div>
         </Flex>
+
+        {/* -------- CONFIRM DIALOG ---------  */}
+        <Dialog.Root
+          open={isConfirmSwitchDialogOpen}
+          onOpenChange={(isOpen) => setIsConfirmSwitchDialogOpen(isOpen)}
+        >
+          <Dialog.Content
+            style={{ maxWidth: 450, paddingTop: 22, paddingBottom: 20 }}
+            size="1"
+          >
+            <Dialog.Title size={"4"}>You have unsaved changes</Dialog.Title>
+
+            <DialogDescription>
+              <Callout.Root color="red">
+                <Callout.Icon>
+                  <ExclamationTriangleIcon />
+                </Callout.Icon>
+                <CalloutText>
+                  Data will be lost. Are you sure you want to continue?
+                </CalloutText>
+              </Callout.Root>
+              <br />
+              <Text
+                color="gray"
+                size="1"
+                style={{
+                  marginLeft: "5px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <InfoCircledIcon
+                  width="12"
+                  height="12"
+                  style={{ paddingRight: "5px" }}
+                />
+                You can click "Cancel" and save your changes before.
+              </Text>
+              <br />
+            </DialogDescription>
+
+            <Flex gap="3" mt="4" justify="end">
+              <Dialog.Close>
+                <Button variant="soft" color="gray">
+                  Cancel
+                </Button>
+              </Dialog.Close>
+              <Dialog.Close>
+                <Button
+                  color="red"
+                  onClick={() => {
+                    setIsConfirmSwitchDialogOpen(false);
+
+                    if (drawingIdToSwitch.current) {
+                      handleLoadItem(drawingIdToSwitch.current);
+                      drawingIdToSwitch.current = undefined;
+                    }
+                  }}
+                >
+                  Yes, continue
+                </Button>
+              </Dialog.Close>
+            </Flex>
+          </Dialog.Content>
+        </Dialog.Root>
       </section>
     </Theme>
   );

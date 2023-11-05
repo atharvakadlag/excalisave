@@ -30,12 +30,13 @@ const { browser } = require("webextension-polyfill-ts");
 
   const emptyDataState = await getExcalidrawEmptyDataState();
 
-  // Load empty data state
-  localStorage.setItem("excalidraw", emptyDataState.excalidraw);
-  localStorage.setItem("excalidraw-state", emptyDataState.excalidrawState);
-  localStorage.setItem("version-files", emptyDataState.versionFiles);
-  localStorage.setItem("version-dataState", emptyDataState.versionDataState);
-  localStorage.removeItem("__drawing_id");
+  window.addEventListener("beforeunload", () => {
+    localStorage.setItem("excalidraw", emptyDataState.excalidraw);
+    localStorage.setItem("excalidraw-state", emptyDataState.excalidrawState);
+    localStorage.setItem("version-files", emptyDataState.versionFiles);
+    localStorage.setItem("version-dataState", emptyDataState.versionDataState);
+    localStorage.removeItem("__drawing_id");
+  });
 
   // Reload page to apply changes
   location.reload();

@@ -181,12 +181,6 @@ export function getExcalidrawEmptyDataState(): ExcalidrawDataState {
 export function getScriptParams<T>(): T {
   const params = window.__SCRIPT_PARAMS__;
 
-  if (!params) {
-    throw new Error(
-      'Error trying to get params: "__SCRIPT_PARAMS__" is missing. Could not process script.'
-    );
-  }
-
   // Reset params after read to avoid being used by another script
   window.__SCRIPT_PARAMS__ = undefined;
 

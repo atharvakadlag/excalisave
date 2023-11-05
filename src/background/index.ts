@@ -58,10 +58,6 @@ browser.runtime.onMessage.addListener(
           },
         };
 
-        if (!message.payload.imageBase64) {
-          console.log("Nueva data", newData);
-        }
-
         await browser.storage.local.set({
           [id]: newData,
         });

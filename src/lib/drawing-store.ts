@@ -122,4 +122,37 @@ export class DrawingStore {
 
     await DrawingStore.deleteDrawingFromFavorites(id);
   }
+
+  static async hasUnsavedChanges(): Promise<boolean> {
+    try {
+      const activeTab = await TabUtils.getActiveTab();
+
+      if (!activeTab) {
+        console.error("Error loading drawing: No active tab found", {
+          activeTab,
+        });
+
+        return true;
+      }
+
+      const response = await browser.scripting.executeScript({
+        func: () => {
+          return localStorage.getItem("excalidraw");
+        },
+        target: { tabId: activeTab.id },
+      });
+
+      let hasUnsaved: boolean = true;
+      const result = JSON.parse((response as any)?.[0].result as string);
+
+      if (result.length === 0) {
+        hasUnsaved = false;
+      }
+
+      return hasUnsaved;
+    } catch {}
+
+    // By default, show confirmation dialog, we ensure the action is approved.
+    return true;
+  }
 }
