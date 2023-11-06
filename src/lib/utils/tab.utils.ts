@@ -1,4 +1,5 @@
 import { Tabs, browser } from "webextension-polyfill-ts";
+import { XLogger } from "../logger";
 
 export class TabUtils {
   static async getActiveTab(): Promise<Tabs.Tab> {
@@ -8,7 +9,7 @@ export class TabUtils {
     });
 
     if (tab.length === 0) {
-      console.error("No active tab found");
+      XLogger.warn("No active tab found");
 
       return undefined;
     }

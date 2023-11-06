@@ -5,6 +5,7 @@ import {
 import { MessageType, SaveDrawingMessage } from "../constants/message.types";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { DRAWING_ID_KEY_LS } from "../lib/constants";
+import { XLogger } from "../lib/logger";
 import { As } from "../lib/types.utils";
 const { browser } = require("webextension-polyfill-ts");
 
@@ -17,7 +18,7 @@ type ScriptParams = {
 
   const loadDrawingId = params?.id;
   if (!loadDrawingId) {
-    console.info("No drawing id found, could not load");
+    XLogger.info("No drawing id found, could not load");
 
     return;
   }
@@ -49,7 +50,7 @@ type ScriptParams = {
   const drawingData = response[loadDrawingId] as IDrawing;
 
   if (!drawingData) {
-    console.error("No drawing data found");
+    XLogger.error("No drawing data found");
 
     return;
   }

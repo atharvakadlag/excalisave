@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Scripting, browser } from "webextension-polyfill-ts";
 import { TabUtils } from "../../lib/utils/tab.utils";
 import { DRAWING_ID_KEY_LS } from "../../lib/constants";
+import { XLogger } from "../../lib/logger";
 
 export function useCurrentDrawingId(): {
   currentDrawingId: string;
@@ -16,7 +17,7 @@ export function useCurrentDrawingId(): {
       const activeTab = await TabUtils.getActiveTab();
 
       if (!activeTab) {
-        console.log("No active tab");
+        XLogger.warn("No active tab");
 
         return;
       }

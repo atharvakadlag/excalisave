@@ -1,10 +1,38 @@
 import { browser } from "webextension-polyfill-ts";
 import {
   MessageType,
-  SaveNewDrawingMessage,
   SaveDrawingMessage,
+  SaveNewDrawingMessage,
 } from "../constants/message.types";
 import { IDrawing } from "../interfaces/drawing.interface";
+import { XLogger } from "../lib/logger";
+
+browser.runtime.onInstalled.addListener(async () => {
+  XLogger.log("onInstalled...");
+
+  XLogger.log(
+    "Content scripts",
+    (browser.runtime.getManifest() as any).content_scripts
+  );
+  for (const cs of (browser.runtime.getManifest() as any).content_scripts) {
+    for (const tab of await browser.tabs.query({ url: cs.matches })) {
+      browser.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: cs.js,
+      });
+    }
+  }
+
+  // const tabs = await browser.tabs.query({
+  //   url: "https://excalidraw.com/*",
+  // });
+
+  // await Promise.all(
+  //   tabs.map((tab) => {
+  //     return browser.tabs.reload(tab.id);
+  //   })
+  // );
+});
 
 browser.runtime.onInstalled.addListener(async () => {
   console.log("onInstalled...");
@@ -35,7 +63,7 @@ browser.runtime.onInstalled.addListener(async () => {
 
 browser.runtime.onMessage.addListener(
   async (message: SaveDrawingMessage | SaveNewDrawingMessage, _sender: any) => {
-    console.log("Mesage brackground", message);
+    XLogger.log("Mesage brackground", message);
     if (!message || !message.type) return;
 
     const id = message.payload.id;
@@ -65,7 +93,7 @@ browser.runtime.onMessage.addListener(
         ] as IDrawing;
 
         if (!exitentDrawing) {
-          console.error("No drawing found with id", id);
+          XLogger.error("No drawing found with id", id);
           return;
         }
 

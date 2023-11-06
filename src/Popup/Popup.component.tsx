@@ -32,6 +32,7 @@ import { useCurrentDrawingId } from "./hooks/useCurrentDrawing.hook";
 import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
+import { XLogger } from "../lib/logger";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -106,7 +107,7 @@ const Popup: React.FC = () => {
         },
       });
     } catch (error) {
-      console.error("Error renaming drawing", error);
+      XLogger.error("Error renaming drawing", error);
     }
   };
 
@@ -122,7 +123,7 @@ const Popup: React.FC = () => {
 
       await DrawingStore.deleteDrawing(id);
     } catch (error) {
-      console.error("Error deleting drawing", error);
+      XLogger.error("Error deleting drawing", error);
     }
   };
 
@@ -132,7 +133,7 @@ const Popup: React.FC = () => {
       const activeTab = await TabUtils.getActiveTab();
 
       if (!activeTab) {
-        console.error("Error loading drawing: No active tab or drawing found", {
+        XLogger.error("Error loading drawing: No active tab or drawing found", {
           activeTab,
         });
 

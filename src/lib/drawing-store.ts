@@ -2,6 +2,7 @@ import { browser } from "webextension-polyfill-ts";
 import { RandomUtils } from "./utils/random.utils";
 import { TabUtils } from "./utils/tab.utils";
 import { DRAWING_ID_KEY_LS } from "./constants";
+import { XLogger } from "./logger";
 
 type SaveDrawingProps = {
   name: string;
@@ -12,7 +13,7 @@ export class DrawingStore {
     const activeTab = await TabUtils.getActiveTab();
 
     if (!activeTab) {
-      console.error("No active tab found");
+      XLogger.warn("No active tab found");
 
       return;
     }
@@ -38,7 +39,7 @@ export class DrawingStore {
     const activeTab = await TabUtils.getActiveTab();
 
     if (!activeTab) {
-      console.error("No active tab found");
+      XLogger.warn("No active tab found");
 
       return;
     }
@@ -62,7 +63,7 @@ export class DrawingStore {
     const activeTab = await TabUtils.getActiveTab();
 
     if (!activeTab) {
-      console.error("No active tab found");
+      XLogger.warn("No active tab found");
 
       return;
     }
@@ -81,7 +82,7 @@ export class DrawingStore {
     const activeTab = await TabUtils.getActiveTab();
 
     if (!activeTab) {
-      console.error("No active tab found");
+      XLogger.warn("No active tab found");
 
       return;
     }
@@ -106,7 +107,7 @@ export class DrawingStore {
     const activeTab = await TabUtils.getActiveTab();
 
     if (!activeTab) {
-      console.error("No active tab found");
+      XLogger.warn("No active tab found");
 
       return;
     }
@@ -129,7 +130,7 @@ export class DrawingStore {
       const activeTab = await TabUtils.getActiveTab();
 
       if (!activeTab) {
-        console.error("Error loading drawing: No active tab found", {
+        XLogger.warn("Error loading drawing: No active tab found", {
           activeTab,
         });
 

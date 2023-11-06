@@ -8,6 +8,14 @@
     "**/.nvmrc": true
   },
   "jest.jestCommandLine": "yarn test",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/extension": true,
+    "**/src/external-libs": true,
+    "**/yarn.lock": true
+  },
   "workbench.colorCustomizations": {
     "activityBar.background": "#3c38b0",
     "activityBar.foreground": "#fff",

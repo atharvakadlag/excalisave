@@ -23,7 +23,6 @@ const extensionReloaderPlugin = new ExtensionReloader({
   reloadPage: true,
   entries: {
     contentScript: [
-      "contentScript",
       "execute-scripts/sendDrawingDataToSave",
       "execute-scripts/loadDrawing",
       "execute-scripts/newDrawing",
@@ -74,7 +73,6 @@ module.exports = {
       "ContentScript",
       "listenDrawingUpdates.ts"
     ),
-    contentScript: path.join(sourcePath, "ContentScript", "index.ts"),
     popup: path.join(sourcePath, "Popup", "index.tsx"),
     options: path.join(sourcePath, "Options", "index.tsx"),
   },

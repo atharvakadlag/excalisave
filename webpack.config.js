@@ -67,7 +67,6 @@ module.exports = {
       "ContentScript",
       "listenDrawingUpdates.ts"
     ),
-    contentScript: path.join(sourcePath, "ContentScript", "index.ts"),
     popup: path.join(sourcePath, "Popup", "index.tsx"),
     options: path.join(sourcePath, "Options", "index.tsx"),
   },

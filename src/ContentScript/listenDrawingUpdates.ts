@@ -1,5 +1,6 @@
 import { MessageType, SaveDrawingMessage } from "../constants/message.types";
 import { DRAWING_ID_KEY_LS } from "../lib/constants";
+import { XLogger } from "../lib/logger";
 import { As } from "../lib/types.utils";
 import { getDrawingDataState } from "./content-script.utils";
 const { browser } = require("webextension-polyfill-ts");
@@ -13,7 +14,7 @@ let intervalId: number;
 
 document.addEventListener(DESTRUCTION_EVENT, () => {
   try {
-    console.log("Cleaning up from updates...", {
+    XLogger.log("Cleaning up from updates...", {
       DESTRUCTION_EVENT,
       timeoutId,
       intervalId,
@@ -24,8 +25,7 @@ document.addEventListener(DESTRUCTION_EVENT, () => {
 });
 
 browser.runtime.connect().onDisconnect.addListener(function () {
-  console.log("⛽️️️️️️️️️️️️️️️️p️RUntime disconnect");
-  console.log("⛽️️️️️️️️️️️️️️️️p️RUntime disconnect");
+  XLogger.log("⛽️️️️️️️️️️️️️️️️p️RUntime disconnect");
 });
 // -----------  Content Script Cleanup  --------------------
 
@@ -57,7 +57,7 @@ timeoutId = window.setTimeout(() => {
           })
         );
       } catch (error) {
-        console.error(
+        XLogger.error(
           "[Listen Changes] Error sending drawing data to save",
           error
         );
