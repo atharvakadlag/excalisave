@@ -1,0 +1,25 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/dist": true,
+    "**/node_modules": true,
+    // "**/tsconfig.json": true,
+    "**/.nvmrc": true
+  },
+  "jest.jestCommandLine": "yarn test",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/extension": true,
+    "**/src/external-libs": true,
+    "**/yarn.lock": true
+  },
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#3c38b0",
+    "activityBar.foreground": "#fff",
+    "activityBar.inactiveForeground": "#8683f0",
+    "titleBar.activeForeground": "#f0f8f9"
+  }
+}

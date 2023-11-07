@@ -1,0 +1,75 @@
+{
+  "manifest_version": 3,
+  "name": "Excalisave",
+  "version": "1.1",
+  "short_name": "Excalisave",
+  "description": "Save your excalidraw drawings.",
+  "icons": {
+    "16": "assets/icons/32.png",
+    "48": "assets/icons/48.png",
+    "128": "assets/icons/128.png"
+  },
+  "homepage_url": "https://github.com/atharvakadlag/excalisave",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting",
+    "unlimitedStorage"
+  ],
+
+  "__chrome|firefox__author": "abhijithvijayan",
+  "__opera__developer": {
+    "name": "abhijithvijayan"
+  },
+
+  "__firefox|prod__browser_specific_settings": {
+    "gecko": {
+      "id": "420854ee-7a85-42b9-822f-8e03dc5f6de9"
+    }
+  },
+
+  "__chrome__minimum_chrome_version": "49",
+  "__opera__minimum_opera_version": "36",
+
+  "action": {
+    "default_title": "Excalisave",
+    "default_popup": "popup.html"
+  },
+
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "Command+Shift+E"
+      }
+    }
+  },
+
+  "__chrome|opera__background": {
+    "service_worker": "js/background.bundle.js"
+  },
+
+  "__firefox__background": {
+    "scripts": ["js/background.bundle.js"]
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["https://excalidraw.com/*"]
+    }
+  ],
+  "host_permissions": ["https://excalidraw.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://excalidraw.com/*"],
+      "js": [
+        "libs/react.production.min.js",
+        "libs/react-dom.production.min.js",
+        "libs/excalidraw.production.min.js",
+        "js/content-scripts/listenDrawingUpdates.bundle.js"
+      ]
+    }
+  ]
+}

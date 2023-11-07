@@ -1,0 +1,25 @@
+.Drawing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  &__image {
+    background: rgb(255, 255, 255);
+    width: 172px;
+    height: 116px;
+    border-radius: 0.35rem;
+    box-shadow: 0px 0px 0px 1px var(--gray-5);
+    object-fit: contain;
+    padding: 5px;
+    box-sizing: border-box;
+    cursor: pointer;
+  }
+
+  &__favorite {
+    position: absolute;
+    display: block;
+    bottom: 30px;
+    left: 6px;
+    color: var(--red-a9);
+  }
+}
