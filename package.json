@@ -10,18 +10,18 @@
     "yarn": ">= 1.22.0"
   },
   "scripts": {
-    "dev:chrome": "cross-env NODE_ENV=development cross-env TARGET_BROWSER=chrome cross-env NODE_OPTIONS=--openssl-legacy-provider webpack --watch --config webpack.config.dev.js",
-    "dev:firefox": "cross-env NODE_ENV=development cross-env TARGET_BROWSER=firefox cross-env NODE_OPTIONS=--openssl-legacy-provider webpack --watch  --config webpack.config.dev.js",
-    "dev:opera": "cross-env NODE_ENV=development cross-env TARGET_BROWSER=opera cross-env NODE_OPTIONS=--openssl-legacy-provider webpack --watch  --config webpack.config.dev.js",
-    "build:chrome": "cross-env NODE_ENV=production cross-env TARGET_BROWSER=chrome cross-env NODE_OPTIONS=--openssl-legacy-provider webpack",
-    "build:firefox": "cross-env NODE_ENV=production cross-env TARGET_BROWSER=firefox cross-env NODE_OPTIONS=--openssl-legacy-provider webpack",
-    "build:opera": "cross-env NODE_ENV=production cross-env TARGET_BROWSER=opera cross-env NODE_OPTIONS=--openssl-legacy-provider webpack",
+    "dev:chrome": "cross-env NODE_ENV=development cross-env TARGET_BROWSER=chrome cross-env webpack --watch --config webpack.config.dev.js",
+    "dev:firefox": "cross-env NODE_ENV=development cross-env TARGET_BROWSER=firefox cross-env webpack --watch  --config webpack.config.dev.js",
+    "dev:opera": "cross-env NODE_ENV=development cross-env TARGET_BROWSER=opera cross-env webpack --watch  --config webpack.config.dev.js",
+    "build:chrome": "cross-env NODE_ENV=production cross-env TARGET_BROWSER=chrome cross-env webpack",
+    "build:firefox": "cross-env NODE_ENV=production cross-env TARGET_BROWSER=firefox cross-env webpack",
+    "build:opera": "cross-env NODE_ENV=production cross-env TARGET_BROWSER=opera cross-env webpack",
     "build": "yarn run build:chrome && yarn run build:firefox && yarn run build:opera",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test": "jest",
-    "storybook": "cross-env NODE_OPTIONS=--openssl-legacy-provider storybook dev -p 6006",
-    "build-storybook": "cross-env NODE_OPTIONS=--openssl-legacy-provider storybook build"
+    "storybook": "cross-env storybook dev -p 6006",
+    "build-storybook": "cross-env storybook build"
   },
   "dependencies": {
     "@babel/runtime": "^7.14.0",
