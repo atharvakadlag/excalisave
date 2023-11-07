@@ -391,7 +391,7 @@ const Popup: React.FC = () => {
                   icon={<BookmarkIcon width={"30"} height={"30"} />}
                   message={
                     <Text size={"2"}>
-                      You don't have drawings saved yet. <br />
+                      You don't have saved drawings yet. <br />
                       Start saving one by clicking on the <Strong>
                         Save
                       </Strong>{" "}
