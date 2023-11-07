@@ -18,7 +18,7 @@ export class DrawingStore {
       return;
     }
 
-    const id = RandomUtils.generateRandomId();
+    const id = `drawing:${RandomUtils.generateRandomId()}`;
 
     // This workaround is to pass params to script, it's ugly but it works
     await browser.scripting.executeScript({

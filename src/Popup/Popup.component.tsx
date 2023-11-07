@@ -68,9 +68,10 @@ const Popup: React.FC = () => {
       const result: Record<string, IDrawing> =
         await browser.storage.local.get();
 
-      const newDrawings: IDrawing[] = Object.entries(result)
-        .filter(([key]) => key !== "favorites")
-        .map(([_key, value]) => value);
+      console.log(Object.values(result));
+      const newDrawings: IDrawing[] = Object.values(result).filter(
+        (drawing: IDrawing) => drawing?.id?.startsWith?.("drawing:")
+      );
 
       setDrawings(newDrawings);
     };

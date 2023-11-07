@@ -10,10 +10,6 @@ import { XLogger } from "../lib/logger";
 browser.runtime.onInstalled.addListener(async () => {
   XLogger.log("onInstalled...");
 
-  XLogger.log(
-    "Content scripts",
-    (browser.runtime.getManifest() as any).content_scripts
-  );
   for (const cs of (browser.runtime.getManifest() as any).content_scripts) {
     for (const tab of await browser.tabs.query({ url: cs.matches })) {
       browser.scripting.executeScript({
@@ -22,43 +18,6 @@ browser.runtime.onInstalled.addListener(async () => {
       });
     }
   }
-
-  // const tabs = await browser.tabs.query({
-  //   url: "https://excalidraw.com/*",
-  // });
-
-  // await Promise.all(
-  //   tabs.map((tab) => {
-  //     return browser.tabs.reload(tab.id);
-  //   })
-  // );
-});
-
-browser.runtime.onInstalled.addListener(async () => {
-  console.log("onInstalled...");
-
-  console.log(
-    "Content scripts",
-    (browser.runtime.getManifest() as any).content_scripts
-  );
-  for (const cs of (browser.runtime.getManifest() as any).content_scripts) {
-    for (const tab of await browser.tabs.query({ url: cs.matches })) {
-      browser.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: cs.js,
-      });
-    }
-  }
-
-  // const tabs = await browser.tabs.query({
-  //   url: "https://excalidraw.com/*",
-  // });
-
-  // await Promise.all(
-  //   tabs.map((tab) => {
-  //     return browser.tabs.reload(tab.id);
-  //   })
-  // );
 });
 
 browser.runtime.onMessage.addListener(

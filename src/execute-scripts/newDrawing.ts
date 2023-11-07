@@ -34,8 +34,8 @@ const { browser } = require("webextension-polyfill-ts");
   window.addEventListener("beforeunload", () => {
     localStorage.setItem("excalidraw", emptyDataState.excalidraw);
     localStorage.setItem("excalidraw-state", emptyDataState.excalidrawState);
-    localStorage.setItem("version-files", emptyDataState.versionFiles);
-    localStorage.setItem("version-dataState", emptyDataState.versionDataState);
+    localStorage.setItem("version-files", Date.now().toString());
+    localStorage.setItem("version-dataState", Date.now().toString());
     localStorage.removeItem(DRAWING_ID_KEY_LS);
   });
 
