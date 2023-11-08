@@ -117,7 +117,7 @@ export function NavBar({
       <DropdownMenu.Root>
         <Flex className="Navbar__ActionButton">
           <Button
-            disabled={!props.inExcalidrawPage}
+            disabled={!props.inExcalidrawPage || props.isLoading}
             onClick={() => {
               if (props.currentDrawing) {
                 props.onSaveDrawing();
@@ -129,7 +129,9 @@ export function NavBar({
           >
             Save
           </Button>
-          <DropdownMenu.Trigger disabled={!props.inExcalidrawPage}>
+          <DropdownMenu.Trigger
+            disabled={!props.inExcalidrawPage || props.isLoading}
+          >
             <IconButton>
               <CaretDownIcon width="18" height="18" />
             </IconButton>
