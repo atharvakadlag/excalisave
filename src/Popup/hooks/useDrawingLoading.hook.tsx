@@ -14,7 +14,7 @@ export function useDrawingLoading() {
     setLoading(true);
     savedTimeout.current = window.setTimeout(() => {
       setLoading(false);
-    }, 600);
+    }, 700);
   };
 
   useEffect(() => {
