@@ -1,14 +1,16 @@
-<h1 align="center">💾 Excalisave</h1>
+<p align="center"><img width="64px" alt="Icon" src="./src/assets/icons/128.png"></p>
+<h1 align="center">Excalisave</h1>
 <p align="center">Save your Excalidraw drawings</p>
 
-## Features
+## ✨ Features
 
-- Save your drawing
-- Preview of your drawings
-- Search your drawings
-<img width="1589" alt="Screenshot 2023-11-11 at 9 27 21 AM" src="https://github.com/dantecalderon/excalisave/assets/18385321/fe408c31-102d-4241-a363-5aa9c52f0868">
+- 💾 Save your drawing
+- 🖼️ Preview of your drawings
+- 🔎 Search your drawings
+- ❤️ Favorites
+- and more...
 
-
+<img width="1580" alt="Screenshot 2023-11-11 at 9 27 21 AM" src="https://github.com/dantecalderon/excalisave/assets/18385321/5fd2b45d-e4fa-44cc-9d90-786e70609fc1">
 
 ## Browser Support
 
