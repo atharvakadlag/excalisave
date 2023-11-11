@@ -6,16 +6,15 @@
 - Save your drawing
 - Preview of your drawings
 - Search your drawings
+<img width="1589" alt="Screenshot 2023-11-11 at 9 27 21 AM" src="https://github.com/dantecalderon/excalisave/assets/18385321/fe408c31-102d-4241-a363-5aa9c52f0868">
+
+
 
 ## Browser Support
 
 | [![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png)](https://chrome.google.com/webstore/detail/excalisave/obnjfbgikjcdfnbnmdamffacjfpankih) | [![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png)](https://addons.mozilla.org/en-US/firefox/addon/excalisave/) |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | 88 & later ✔                                                                                  | To be published                                                                                  |
-
-Note about icons:
-
-for 16 image do not use padding.
 
 ## 🚀 Quick Start
 
