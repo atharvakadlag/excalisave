@@ -127,7 +127,7 @@ export function NavBar({
             }}
             value={"soft"}
           >
-            Save
+            {props.currentDrawing ? "Save" : "Save As..."}
           </Button>
           <DropdownMenu.Trigger
             disabled={!props.inExcalidrawPage || props.isLoading}
