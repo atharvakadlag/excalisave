@@ -5,7 +5,7 @@
   "short_name": "Excalisave",
   "description": "Save your excalidraw drawings.",
   "icons": {
-    "16": "assets/icons/32.png",
+    "16": "assets/icons/16.png",
     "48": "assets/icons/48.png",
     "128": "assets/icons/128.png"
   },
@@ -18,18 +18,18 @@
     "unlimitedStorage"
   ],
 
-  "__chrome|firefox__author": "abhijithvijayan",
+  "__chrome|firefox__author": "atharvakadlag",
   "__opera__developer": {
-    "name": "abhijithvijayan"
+    "name": "atharvakadlag"
   },
 
   "__firefox|prod__browser_specific_settings": {
     "gecko": {
-      "id": "420854ee-7a85-42b9-822f-8e03dc5f6de9"
+      "id": "excalisave@atharvakadlag.github.io"
     }
   },
 
-  "__chrome__minimum_chrome_version": "49",
+  "__chrome__minimum_chrome_version": "88",
   "__opera__minimum_opera_version": "36",
 
   "action": {
