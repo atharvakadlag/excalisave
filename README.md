@@ -5,20 +5,20 @@
 ## ✨ Features
 
 - 💾 Save your drawing
-- 🖼️ Preview of your drawings
+- 🖼️ Preview your drawings
 - 🔎 Search your drawings
 - ❤️ Favorites
 - and more...
 
-<img width="1580" alt="Screenshot 2023-11-11 at 9 27 21 AM" src="https://github.com/dantecalderon/excalisave/assets/18385321/5fd2b45d-e4fa-44cc-9d90-786e70609fc1">
+<img width="1580" alt="Screenshot" src="https://github.com/dantecalderon/excalisave/assets/18385321/5fd2b45d-e4fa-44cc-9d90-786e70609fc1">
 
-## Browser Support
+## 📥 Install
 
 | [![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png)](https://chrome.google.com/webstore/detail/excalisave/obnjfbgikjcdfnbnmdamffacjfpankih) | [![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png)](https://addons.mozilla.org/en-US/firefox/addon/excalisave/) |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | 88 & later ✔                                                                                  | To be published                                                                                  |
 
-## 🚀 Quick Start
+## ⚒️ Development
 
 Ensure you have
 
@@ -36,7 +36,7 @@ Then run the following:
 - `yarn run build:opera` to build opera extension
 - `yarn run build` builds and packs extensions all at once to extension/ directory
 
-### Development
+### Install extension for development
 
 - `yarn install --frozen-lockfile` to install dependencies.
 - To watch file changes in development
@@ -61,7 +61,7 @@ Then run the following:
 
   - Load the Add-on via `about:debugging` as temporary Add-on.
   - Choose the `manifest.json` file in the extracted directory
-  - ⚠️ Make sure to accept the permission for the extension to work properly.
+  - ⚠️ Ensure that you grant the necessary permissions for the extension to function correctly
 
 - ### Opera
 
