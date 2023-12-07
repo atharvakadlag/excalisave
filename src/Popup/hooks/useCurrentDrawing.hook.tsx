@@ -6,11 +6,15 @@ import { XLogger } from "../../lib/logger";
 
 export function useCurrentDrawingId(): {
   currentDrawingId: string;
+  isLiveCollaboration: boolean;
   inExcalidrawPage: boolean;
   setCurrentDrawingId: (id: string) => void;
+  setIsLiveCollaboration: (isLive: boolean) => void;
 } {
   const [inExcalidrawPage, setInExcalidrawPage] = useState<boolean>(true);
   const [currentDrawingId, setCurrentDrawingId] = useState<string>(undefined);
+  const [isLiveCollaboration, setIsLiveCollaboration] =
+    useState<boolean>(false);
 
   useEffect(() => {
     const loadCurrentDrawingFromLocalStorage = async () => {
@@ -25,6 +29,10 @@ export function useCurrentDrawingId(): {
       if (!activeTab.url.startsWith("https://excalidraw.com")) {
         setInExcalidrawPage(false);
         return;
+      }
+
+      if (activeTab.url.includes("#room")) {
+        setIsLiveCollaboration(true);
       }
 
       const result = await browser.scripting.executeScript({
@@ -45,8 +53,10 @@ export function useCurrentDrawingId(): {
   }, []);
 
   return {
+    isLiveCollaboration,
     inExcalidrawPage,
     currentDrawingId,
     setCurrentDrawingId,
+    setIsLiveCollaboration,
   };
 }

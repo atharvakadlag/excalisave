@@ -25,7 +25,14 @@ type ScriptParams = {
 
   // Save data before load new drawing if there is a current drawing
   const currentDrawingId = localStorage.getItem(DRAWING_ID_KEY_LS);
-  if (currentDrawingId) {
+
+  const url = new URL(window.location.href);
+  const isLiveCollaboration = url.searchParams.has("room");
+
+  // Only save if it is not live collaboration, when it is live collaboration, the data is not saved locally
+  // and could asve incorrect data.
+  if (currentDrawingId && !isLiveCollaboration) {
+    XLogger.info("Saving current drawing before load new drawing");
     const drawingDataState = await getDrawingDataState();
 
     await browser.runtime.sendMessage(
@@ -69,6 +76,5 @@ type ScriptParams = {
     localStorage.setItem(DRAWING_ID_KEY_LS, loadDrawingId);
   });
 
-  // Reload page to apply changes
-  location.reload();
+  location.assign(url.origin);
 })();
