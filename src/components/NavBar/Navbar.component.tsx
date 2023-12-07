@@ -32,6 +32,7 @@ type NavBarProps = {
   currentDrawing?: IDrawing;
   isLoading: boolean;
   inExcalidrawPage: boolean;
+  isLiveCollaboration: boolean;
 };
 
 export function NavBar({
@@ -76,7 +77,6 @@ export function NavBar({
     >
       {SearchComponent}
       {CurrentItemButton}
-
       {props.currentDrawing && (
         <Flex
           style={{
@@ -117,7 +117,11 @@ export function NavBar({
       <DropdownMenu.Root>
         <Flex className="Navbar__ActionButton">
           <Button
-            disabled={!props.inExcalidrawPage || props.isLoading}
+            disabled={
+              !props.inExcalidrawPage ||
+              props.isLoading ||
+              props.isLiveCollaboration
+            }
             onClick={() => {
               if (props.currentDrawing) {
                 props.onSaveDrawing();
@@ -130,7 +134,11 @@ export function NavBar({
             {props.currentDrawing ? "Save" : "Save As..."}
           </Button>
           <DropdownMenu.Trigger
-            disabled={!props.inExcalidrawPage || props.isLoading}
+            disabled={
+              !props.inExcalidrawPage ||
+              props.isLoading ||
+              props.isLiveCollaboration
+            }
           >
             <IconButton>
               <CaretDownIcon width="18" height="18" />

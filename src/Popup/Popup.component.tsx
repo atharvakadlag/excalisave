@@ -82,6 +82,29 @@ const Popup: React.FC = () => {
     };
 
     loadDrawings();
+
+    // This allows updating the screenshot preview when popup is open to not wait until next time it's opened
+    const onDrawingChanged = async (changes: any, areaName: string) => {
+      if (areaName !== "local") return;
+
+      setDrawings((prevDrawings) => {
+        return prevDrawings.map((drawing) => {
+          if (changes[drawing.id]) {
+            return {
+              ...drawing,
+              ...changes[drawing.id].newValue,
+            };
+          }
+          return drawing;
+        });
+      });
+    };
+
+    browser.storage.onChanged.addListener(onDrawingChanged);
+
+    return () => {
+      browser.storage.onChanged.removeListener(onDrawingChanged);
+    };
   }, []);
 
   useEffect(() => {
@@ -229,7 +252,8 @@ const Popup: React.FC = () => {
           onNewDrawing={handleNewDrawing}
           isLoading={loading}
           inExcalidrawPage={inExcalidrawPage}
-          currentDrawing={isLiveCollaboration ? null : currentDrawing}
+          currentDrawing={currentDrawing}
+          isLiveCollaboration={isLiveCollaboration}
           onSaveDrawing={handleSaveCurrentDrawing}
           SearchComponent={
             <TextField.Root
