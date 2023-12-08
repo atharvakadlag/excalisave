@@ -33,6 +33,7 @@ import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 import { XLogger } from "../lib/logger";
+import { Settings } from "../components/Settings/Settings.component";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -400,6 +401,8 @@ const Popup: React.FC = () => {
                   }
                 />
               ))}
+
+            {sidebarSelected === "Settings" && <Settings />}
           </div>
         </Flex>
 

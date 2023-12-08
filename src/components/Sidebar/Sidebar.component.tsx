@@ -1,4 +1,5 @@
 import {
+  GearIcon,
   HeartIcon,
   ListBulletIcon,
   MagnifyingGlassIcon,
@@ -104,6 +105,20 @@ export function Sidebar(props: SidebarProps) {
         >
           <MagnifyingGlassIcon width="18" height="18" />
           Search results
+        </Text>
+
+        <Text
+          as="div"
+          weight={"medium"}
+          size={"1"}
+          onClick={() => props.onChangeSelected?.("Settings")}
+          className={clsx(
+            "Sidebar__item",
+            props.selected === "Settings" && "Sidebar__item--selected"
+          )}
+        >
+          <GearIcon width="18" height="18" />
+          Settings
         </Text>
       </Flex>
 
