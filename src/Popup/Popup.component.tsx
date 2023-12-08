@@ -35,6 +35,7 @@ import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 import { XLogger } from "../lib/logger";
 import { useFolders } from "./hooks/useFolders.hook";
 import "./Popup.styles.scss";
+import { Settings } from "../components/Settings/Settings.component";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -417,6 +418,7 @@ const Popup: React.FC = () => {
                 />
               ))}
 
+<<<<<<< HEAD
             {sidebarSelected.startsWith("folder:") &&
               (filteredDrawings.length > 0 ? (
                 showDrawings()
@@ -426,6 +428,9 @@ const Popup: React.FC = () => {
                   message={<Text size={"2"}>Folder is empty.</Text>}
                 />
               ))}
+=======
+            {sidebarSelected === "Settings" && <Settings />}
+>>>>>>> 092bb6c (add settings view)
           </div>
         </Flex>
 
