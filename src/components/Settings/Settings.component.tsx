@@ -7,6 +7,8 @@ import { Box, Button, Callout, Flex, Text } from "@radix-ui/themes";
 import React from "react";
 import { browser } from "webextension-polyfill-ts";
 import { IDrawing } from "../../interfaces/drawing.interface";
+import JSZip from "jszip";
+import FileSaver from "file-saver";
 
 const CalloutText = Callout.Text as any;
 
@@ -27,12 +29,12 @@ export function Settings() {
       type: "application/json",
     });
 
-    const url = URL.createObjectURL(fileBlob);
+    const zipFile = new JSZip();
 
-    console.log("TO export", {
-      drawings,
-      favories,
-      url,
+    zipFile.file("data.json", fileBlob);
+
+    zipFile.generateAsync({ type: "blob" }).then((content) => {
+      FileSaver.saveAs(content, `drawings-${Date.now()}.zip`);
     });
   };
 
