@@ -1,15 +1,41 @@
 import {
-  BookmarkIcon,
   CardStackPlusIcon,
   DownloadIcon,
   InfoCircledIcon,
 } from "@radix-ui/react-icons";
-import { Button, Box, Flex, Text, Callout } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex, Text } from "@radix-ui/themes";
 import React from "react";
+import { browser } from "webextension-polyfill-ts";
+import { IDrawing } from "../../interfaces/drawing.interface";
 
 const CalloutText = Callout.Text as any;
 
 export function Settings() {
+  const onExportClick = async () => {
+    const result = await browser.storage.local.get();
+
+    const drawings: IDrawing[] = [];
+    const favories: string[] = result["favorites"] || [];
+
+    Object.entries(result).forEach(([key, value]) => {
+      if (key.startsWith("drawing")) {
+        drawings.push(value);
+      }
+    });
+
+    const fileBlob = new Blob([JSON.stringify({ drawings, favories })], {
+      type: "application/json",
+    });
+
+    const url = URL.createObjectURL(fileBlob);
+
+    console.log("TO export", {
+      drawings,
+      favories,
+      url,
+    });
+  };
+
   return (
     <Flex direction="column" p={"2"} gap={"3"}>
       <Box>
@@ -33,7 +59,12 @@ export function Settings() {
           <CardStackPlusIcon width="14" height="14" />
           Import from JSON
         </Button>
-        <Button variant="soft" style={{ width: "100%" }} size={"1"}>
+        <Button
+          onClick={onExportClick}
+          variant="soft"
+          style={{ width: "100%" }}
+          size={"1"}
+        >
           <DownloadIcon width="14" height="14" />
           Export to JSON
         </Button>
