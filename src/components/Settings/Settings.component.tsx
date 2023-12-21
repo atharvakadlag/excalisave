@@ -61,7 +61,10 @@ export function Settings() {
 
         // Save file
         zipFile.generateAsync({ type: "blob" }).then((content) => {
-          FileSaver.saveAs(content, `drawings-${Date.now()}.zip`);
+          FileSaver.saveAs(
+            content,
+            `excalisave-backup-${new Date().toISOString()}.zip`
+          );
         });
       }
     });
