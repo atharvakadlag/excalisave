@@ -42,8 +42,13 @@ const Popup: React.FC = () => {
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const { currentDrawingId, inExcalidrawPage, setCurrentDrawingId } =
-    useCurrentDrawingId();
+  const {
+    currentDrawingId,
+    inExcalidrawPage,
+    setCurrentDrawingId,
+    isLiveCollaboration,
+    setIsLiveCollaboration,
+  } = useCurrentDrawingId();
   const drawingIdToSwitch = useRef<string | undefined>(undefined);
   const [sidebarSelected, setSidebarSelected] = useState("");
   const { getRestorePoint, setRestorePoint } = useRestorePoint();
@@ -77,6 +82,29 @@ const Popup: React.FC = () => {
     };
 
     loadDrawings();
+
+    // This allows updating the screenshot preview when popup is open to not wait until next time it's opened
+    const onDrawingChanged = async (changes: any, areaName: string) => {
+      if (areaName !== "local") return;
+
+      setDrawings((prevDrawings) => {
+        return prevDrawings.map((drawing) => {
+          if (changes[drawing.id]) {
+            return {
+              ...drawing,
+              ...changes[drawing.id].newValue,
+            };
+          }
+          return drawing;
+        });
+      });
+    };
+
+    browser.storage.onChanged.addListener(onDrawingChanged);
+
+    return () => {
+      browser.storage.onChanged.removeListener(onDrawingChanged);
+    };
   }, []);
 
   useEffect(() => {
@@ -129,7 +157,8 @@ const Popup: React.FC = () => {
   };
 
   const handleLoadItem = async (loadDrawingId: string) => {
-    if (!loading && loadDrawingId !== currentDrawing?.id) {
+    const isSameDrawing = loadDrawingId === currentDrawing?.id;
+    if (!loading && (isLiveCollaboration || !isSameDrawing)) {
       startLoading();
       const activeTab = await TabUtils.getActiveTab();
 
@@ -144,6 +173,7 @@ const Popup: React.FC = () => {
       await DrawingStore.loadDrawing(loadDrawingId);
 
       setCurrentDrawingId(loadDrawingId);
+      setIsLiveCollaboration(false);
       // TODO: Activate this to avoid fast switching errors(or block switching for a few milis)
       // window.close();
     }
@@ -223,6 +253,7 @@ const Popup: React.FC = () => {
           isLoading={loading}
           inExcalidrawPage={inExcalidrawPage}
           currentDrawing={currentDrawing}
+          isLiveCollaboration={isLiveCollaboration}
           onSaveDrawing={handleSaveCurrentDrawing}
           SearchComponent={
             <TextField.Root
