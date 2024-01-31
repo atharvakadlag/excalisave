@@ -27,6 +27,7 @@ const extensionReloaderPlugin = new ExtensionReloader({
       "execute-scripts/loadDrawing",
       "execute-scripts/newDrawing",
       "execute-scripts/export-store",
+      "execute-scripts/load-store",
       "content-scripts/listenDrawingUpdates",
     ],
     background: "background",
@@ -72,6 +73,11 @@ module.exports = {
       sourcePath,
       "execute-scripts",
       "export-store.ts"
+    ),
+    "execute-scripts/load-store": path.join(
+      sourcePath,
+      "execute-scripts",
+      "load-store.ts"
     ),
     "content-scripts/listenDrawingUpdates": path.join(
       sourcePath,

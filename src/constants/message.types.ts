@@ -39,6 +39,6 @@ export type SaveDrawingMessage = {
 export type ExportStore = {
   type: MessageType.EXPORT_STORE;
   payload: {
-    files: BinaryFileData[];
+    files: Record<string, BinaryFileData>;
   };
 };
