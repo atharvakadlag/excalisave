@@ -5,18 +5,18 @@ import {
 } from "@radix-ui/react-icons";
 import { Box, Flex, Separator, Text } from "@radix-ui/themes";
 import { clsx } from "clsx";
-import React, { useEffect } from "react";
-import { HiOutlineFolder } from "react-icons/hi2";
-import { useFolders } from "../../Popup/hooks/useFolders.hook";
-import { CreateFolder } from "../CreateFolder/CreateFolder.component";
-import "./Sidebar.styles.scss";
+import React from "react";
 import { Folder } from "../../interfaces/folder.interface";
+import { CreateFolder } from "../CreateFolder/CreateFolder.component";
+import { FolderItem } from "./components/FolderItem.component";
+import "./Sidebar.styles.scss";
 
 type SidebarProps = {
   onChangeSelected?: (selected: string) => void;
   folders: Folder[];
   onCreateFolder: (name: string) => void;
   onRemoveFolder: (id: string) => void;
+  onRenameFolder: (id: string, name: string) => void;
   selected: string;
 };
 
@@ -97,20 +97,14 @@ export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
         }}
       >
         {folders.map((folder) => (
-          <Text
-            as="div"
+          <FolderItem
             key={folder.id}
-            weight={"medium"}
-            size={"1"}
-            onClick={() => props.onChangeSelected?.(folder.id)}
-            className={clsx(
-              "Sidebar__item",
-              props.selected === folder.id && "Sidebar__item--selected"
-            )}
-          >
-            <HiOutlineFolder width={14} height={14} />
-            {folder.name}
-          </Text>
+            folder={folder}
+            onClick={(folderId: string) => props.onChangeSelected?.(folderId)}
+            isSelected={props.selected === folder.id}
+            onRemoveFolder={props.onRemoveFolder}
+            onRenameFolder={props.onRenameFolder}
+          />
         ))}
       </Flex>
     </Box>

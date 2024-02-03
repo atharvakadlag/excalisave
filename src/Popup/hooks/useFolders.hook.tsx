@@ -22,8 +22,24 @@ export function useFolders() {
     setFolders(newFolders);
   };
 
+  const renameFolder = async (folderId: string, name: string) => {
+    const newFolders = folders.map((folder) => {
+      if (folder.id === folderId) {
+        return {
+          ...folder,
+          name,
+        };
+      }
+
+      return folder;
+    });
+
+    await browser.storage.local.set({ folders: newFolders });
+    setFolders(newFolders);
+  };
+
   const removeFolder = async (folderId: string) => {
-    const newFolders = folders.filter((folder) => folder.id === folderId);
+    const newFolders = folders.filter((folder) => folder.id !== folderId);
     await browser.storage.local.set({ folders: newFolders });
     setFolders(newFolders);
   };
@@ -79,6 +95,7 @@ export function useFolders() {
   return {
     folders,
     createFolder,
+    renameFolder,
     removeFolder,
     addDrawingToFolder,
     removeDrawingFromFolder,

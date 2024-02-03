@@ -28,13 +28,13 @@ import { Sidebar } from "../components/Sidebar/Sidebar.component";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { DrawingStore } from "../lib/drawing-store";
 import { TabUtils } from "../lib/utils/tab.utils";
-import "./Popup.styles.scss";
 import { useCurrentDrawingId } from "./hooks/useCurrentDrawing.hook";
 import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 import { XLogger } from "../lib/logger";
 import { useFolders } from "./hooks/useFolders.hook";
+import "./Popup.styles.scss";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -42,8 +42,13 @@ const CalloutText = Callout.Text as any;
 const Popup: React.FC = () => {
   const [drawings, setDrawings] = React.useState<IDrawing[]>([]);
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
-  const { folders, createFolder, removeFolder, addDrawingToFolder } =
-    useFolders();
+  const {
+    folders,
+    createFolder,
+    renameFolder,
+    removeFolder,
+    addDrawingToFolder,
+  } = useFolders();
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const { currentDrawingId, inExcalidrawPage, setCurrentDrawingId } =
@@ -224,7 +229,6 @@ const Popup: React.FC = () => {
   };
 
   const filteredDrawings = filterDrawings();
-  console.log("FIltered", filteredDrawings);
 
   const showDrawings = () => {
     return (
@@ -316,6 +320,7 @@ const Popup: React.FC = () => {
             onCreateFolder={createFolder}
             onRemoveFolder={removeFolder}
             selected={sidebarSelected}
+            onRenameFolder={renameFolder}
             onChangeSelected={(selected) => setSidebarSelected(selected)}
           />
           <div className="Popup__content">
