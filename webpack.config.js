@@ -62,6 +62,16 @@ module.exports = {
       "execute-scripts",
       "newDrawing.ts"
     ),
+    "execute-scripts/export-store": path.join(
+      sourcePath,
+      "execute-scripts",
+      "export-store.ts"
+    ),
+    "execute-scripts/load-store": path.join(
+      sourcePath,
+      "execute-scripts",
+      "load-store.ts"
+    ),
     "content-scripts/listenDrawingUpdates": path.join(
       sourcePath,
       "ContentScript",
