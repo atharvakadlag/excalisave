@@ -179,7 +179,7 @@ export function Settings() {
           if (favoritesToImport.length > 0) {
             const favorites = await browser.storage.local.get("favorites");
             const newFavorites = new Set([
-              ...favorites.favorites,
+              ...(favorites.favorites || []),
               ...favoritesToImport,
             ]);
 
