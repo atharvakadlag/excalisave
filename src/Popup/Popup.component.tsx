@@ -295,6 +295,10 @@ const Popup: React.FC = () => {
       </Grid>
     );
   };
+  console.log(
+    "❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ️Drawings",
+    filteredDrawings
+  );
 
   return (
     <Theme
