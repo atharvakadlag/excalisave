@@ -18,4 +18,7 @@ const filesStore = createStore("files-db", "files-store");
       files,
     },
   } as ExportStore);
+
+  // Close tab after send message
+  window.close();
 })();

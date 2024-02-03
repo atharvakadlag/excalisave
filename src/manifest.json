@@ -37,6 +37,12 @@
     "default_popup": "popup.html"
   },
 
+  "__chrome|opera__options_page": "options.html",
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+
   "commands": {
     "_execute_action": {
       "suggested_key": {
