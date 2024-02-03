@@ -138,7 +138,7 @@ export function Settings() {
             files: ["./js/execute-scripts/load-store.bundle.js"],
           });
 
-          const { favorites } = dataJSON;
+          const favorites: string[] = dataJSON?.favorites || [];
 
           // Since we are creating new ids for all the drawings, we need to update the favorites to use the new ids
           const favoritesToImport: string[] = [];
