@@ -188,7 +188,7 @@ module.exports = {
           globOptions: {
             dot: true,
             // The built lib external-libs/exccalidraw.production.js is one single file, no need to copy chunks.
-            ignore: ["**/vendor-*.js*"],
+            ignore: ["**/vendor-*.js*", "**/locales/**"],
           },
           to: "assets/excalidraw-assets",
           toType: "dir",
