@@ -210,6 +210,11 @@ const Popup: React.FC = () => {
 
   const filteredDrawings = filterDrawings();
 
+  console.log(
+    "❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ️Drawings",
+    filteredDrawings
+  );
+
   return (
     <Theme
       accentColor="iris"

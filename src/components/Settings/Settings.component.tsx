@@ -1,19 +1,25 @@
+import { BinaryFiles } from "@excalidraw/excalidraw/types/types";
 import {
-  CardStackPlusIcon,
   DownloadIcon,
+  ExclamationTriangleIcon,
   InfoCircledIcon,
+  UploadIcon,
 } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Text } from "@radix-ui/themes";
 import FileSaver from "file-saver";
 import JSZip from "jszip";
 import React, { ChangeEvent, useEffect } from "react";
 import { browser } from "webextension-polyfill-ts";
-import { ExportStore, MessageType } from "../../constants/message.types";
+import {
+  ExportStore,
+  MessageType,
+  SaveNewDrawingMessage,
+} from "../../constants/message.types";
 import { IDrawing } from "../../interfaces/drawing.interface";
 import { XLogger } from "../../lib/logger";
 import { TabUtils } from "../../lib/utils/tab.utils";
 import { parseDataJSON } from "./helpers/import.helpers";
-import { BinaryFiles } from "@excalidraw/excalidraw/types/types";
+import { RandomUtils } from "../../lib/utils/random.utils";
 
 const CalloutText = Callout.Text as any;
 
@@ -27,6 +33,13 @@ export function Settings() {
       return;
     }
 
+    if (!activeTab.url.startsWith("https://excalidraw.com")) {
+      XLogger.error("The active tab is not an excalidraw tab");
+      // TODO: Add notification
+
+      return;
+    }
+
     await browser.scripting.executeScript({
       target: { tabId: activeTab.id },
       files: ["./js/execute-scripts/export-store.bundle.js"],
@@ -35,6 +48,23 @@ export function Settings() {
 
   const onImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
     try {
+      const activeTab = await TabUtils.getActiveTab();
+
+      console.log("Active tab", activeTab);
+
+      if (!activeTab) {
+        XLogger.warn("No active tab found");
+
+        return;
+      }
+
+      if (!activeTab.url.startsWith("https://excalidraw.com")) {
+        XLogger.error("The active tab is not an excalidraw tab");
+        // TODO: Add notification
+
+        return;
+      }
+
       if (event.target?.files?.length !== 1) {
         console.error("File not selected");
 
@@ -63,24 +93,109 @@ export function Settings() {
 
           const dataJSON = await parseDataJSON(zip);
 
-          const filePromises: Promise<string>[] = [];
+          const filePromises: Promise<any>[] = [];
 
-          zip.folder("files-store").forEach(async (_filepath, file) => {
+          zip.folder("drawings").forEach((_filepath, file) => {
             filePromises.push(file.async("text"));
           });
 
-          const files = await Promise.all(filePromises);
+          const drawings = (await Promise.all(filePromises)).map((file) =>
+            JSON.parse(file)
+          );
 
-          console.log("Alll the files", files);
+          const files: any = {};
 
-          XLogger.log("Imported data.json", dataJSON);
+          // Future date to avoid be deleted by excalidraw
+          const lastRetrieved = new Date();
+          lastRetrieved.setFullYear(lastRetrieved.getFullYear() + 5);
+
+          for (const drawing of drawings) {
+            if (drawing.files) {
+              Object.entries(drawing.files).forEach(([key, value]) => {
+                files[key] = {
+                  ...(value as any),
+                  lastRetrieved: lastRetrieved.getTime(),
+                };
+              });
+            }
+          }
+
+          XLogger.debug("Files to import", files);
+
+          // This workaround is to pass params to script, it's ugly but it works
+          await browser.scripting.executeScript({
+            target: {
+              tabId: activeTab.id,
+            },
+            func: (files) => {
+              window.__SCRIPT_PARAMS__ = { files };
+            },
+            args: [files],
+          });
+
+          await browser.scripting.executeScript({
+            target: { tabId: activeTab.id },
+            files: ["./js/execute-scripts/load-store.bundle.js"],
+          });
+
+          const { favorites } = dataJSON;
+
+          // Since we are creating new ids for all the drawings, we need to update the favorites to use the new ids
+          const favoritesToImport: string[] = [];
+
+          // Import drawings
+          drawings.forEach((drawing) => {
+            XLogger.debug("Importing drawing", drawing);
+            const newId = `drawing:${RandomUtils.generateRandomId()}`;
+
+            if (favorites?.includes(drawing.excalisave?.id)) {
+              favoritesToImport.push(newId);
+            }
+
+            const newDrawingMessage: SaveNewDrawingMessage = {
+              type: MessageType.SAVE_NEW_DRAWING,
+              payload: {
+                // Generate new id to avoid to overwrite existing drawings and data loss
+                // TODO: Add a way to merge drawings with the same id
+                id: newId,
+                name: drawing.excalisave?.name + " (imported)",
+                imageBase64: drawing.excalisave?.imageBase64,
+                viewBackgroundColor: drawing.appState?.viewBackgroundColor,
+                excalidraw: JSON.stringify(drawing.elements),
+                excalidrawState: JSON.stringify(drawing.appState),
+                versionFiles: drawing.versionFiles,
+                versionDataState: drawing.versionDataState,
+              },
+            };
+
+            XLogger.debug("Importing drawing", newDrawingMessage);
+
+            browser.runtime.sendMessage(newDrawingMessage);
+          });
+
+          // Import favorites
+          XLogger.debug("Importing favorites", favoritesToImport);
+
+          if (favoritesToImport.length > 0) {
+            const favorites = await browser.storage.local.get("favorites");
+            const newFavorites = new Set([
+              ...favorites.favorites,
+              ...favoritesToImport,
+            ]);
+
+            await browser.storage.local.set({
+              favorites: Array.from(newFavorites),
+            });
+          }
+
+          XLogger.debug("Finished importing drawings");
         } catch (error) {
-          console.error("Error while reading zip file", error);
+          XLogger.error("Error while reading zip file", error);
         }
       };
 
-      reader.onerror = () => {
-        console.error();
+      reader.onerror = (error) => {
+        XLogger.error(error);
       };
     } catch (error) {
       XLogger.error("Error while importing file", error);
@@ -92,8 +207,6 @@ export function Settings() {
       if (message.type === MessageType.EXPORT_STORE) {
         const result = await browser.storage.local.get();
 
-        const favories: string[] = result["favorites"] || [];
-
         const drawings: IDrawing[] = [];
         Object.entries(result).forEach(([key, value]) => {
           if (key.startsWith("drawing")) {
@@ -103,6 +216,11 @@ export function Settings() {
 
         const zipFile = new JSZip();
 
+        // favorites
+        const favorites: string[] = result["favorites"] || [];
+        zipFile.file("data.json", JSON.stringify({ favorites }));
+
+        // drawings
         drawings.forEach((drawing) => {
           const elements = JSON.parse(drawing.data.excalidraw);
 
@@ -147,19 +265,12 @@ export function Settings() {
             );
         });
 
-        const fileBlob = new Blob([JSON.stringify({ favories })], {
-          type: "application/json",
-        });
+        const fileBlob = await zipFile.generateAsync({ type: "blob" });
 
-        zipFile.file("data.json", fileBlob);
-
-        // Save file
-        zipFile.generateAsync({ type: "blob" }).then((content) => {
-          FileSaver.saveAs(
-            content,
-            `excalisave-backup-${new Date().toISOString()}.zip`
-          );
-        });
+        FileSaver.saveAs(
+          fileBlob,
+          `excalisave-backup-${new Date().toISOString()}.zip`
+        );
       }
     });
   }, []);
@@ -172,13 +283,30 @@ export function Settings() {
         </Text>
       </Box>
       <Box>
-        <Callout.Root size="1" color="yellow">
+        <Callout.Root size="1" color="red" role="alergt">
+          <Callout.Icon>
+            <ExclamationTriangleIcon />
+          </Callout.Icon>
+          <CalloutText>
+            Make sure you are on excalidraw.com tab before importing or
+            exporting. It won't work on other tabs.
+          </CalloutText>
+        </Callout.Root>
+
+        <Callout.Root
+          style={{
+            marginTop: "8px",
+          }}
+          size="1"
+          color="blue"
+          variant="soft"
+        >
           <Callout.Icon>
             <InfoCircledIcon />
           </Callout.Icon>
           <CalloutText>
-            You will need admin privileges to install and access this
-            application.
+            Imported files are imported as new drawings, so they won't
+            overwrite.
           </CalloutText>
         </Callout.Root>
       </Box>
@@ -196,8 +324,8 @@ export function Settings() {
           style={{ width: "100%" }}
           size={"1"}
         >
-          <CardStackPlusIcon width="14" height="14" />
-          Import from JSON
+          <UploadIcon width="14" height="14" />
+          Import Backup (.zip)
         </Button>
         <Button
           onClick={onExportClick}
@@ -206,7 +334,7 @@ export function Settings() {
           size={"1"}
         >
           <DownloadIcon width="14" height="14" />
-          Export to JSON
+          Export Backup (.zip)
         </Button>
       </Flex>
     </Flex>
