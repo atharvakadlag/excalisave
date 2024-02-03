@@ -100,7 +100,9 @@ export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
           <FolderItem
             key={folder.id}
             folder={folder}
-            onClick={(folderId: string) => props.onChangeSelected?.(folderId)}
+            onChangeSelected={(folderId: string) =>
+              props.onChangeSelected?.(folderId)
+            }
             isSelected={props.selected === folder.id}
             onRemoveFolder={props.onRemoveFolder}
             onRenameFolder={props.onRenameFolder}

@@ -10,7 +10,7 @@ import {
 } from "@radix-ui/themes";
 import { clsx } from "clsx";
 import React, { useState } from "react";
-import { HiOutlineFolder } from "react-icons/hi2";
+import { LuFolder, LuFolderOpen } from "react-icons/lu";
 import { Folder } from "../../../interfaces/folder.interface";
 
 const DialogDescription = Dialog.Description as any;
@@ -18,7 +18,7 @@ const DialogDescription = Dialog.Description as any;
 type SidebarProps = {
   folder: Folder;
   isSelected: boolean;
-  onClick?: (folderId: string) => void;
+  onChangeSelected?: (selected: string) => void;
   onRenameFolder: (folderId: string, name: string) => void;
   onRemoveFolder: (folderId: string) => void;
 };
@@ -40,9 +40,14 @@ export function FolderItem({
     onRenameFolder?.(folder.id, newName);
   };
 
-  const handleDeleteFolder = () => {
+  const handleDeleteFolder = async () => {
     setDeleteModalOpen(false);
-    props.onRemoveFolder?.(folder.id);
+    await props.onRemoveFolder?.(folder.id);
+
+    // If selected move to All
+    if (isSelected) {
+      props.onChangeSelected?.("All");
+    }
   };
 
   return (
@@ -51,14 +56,14 @@ export function FolderItem({
       key={folder.id}
       weight={"medium"}
       size={"1"}
-      onClick={() => props.onClick?.(folder.id)}
+      onClick={() => props.onChangeSelected?.(folder.id)}
       className={clsx(
         "Sidebar__item",
         isSelected && "Sidebar__item--selected",
         openDropdownId === folder.id && "Sidebar__item--optionsOpened"
       )}
     >
-      <HiOutlineFolder width={14} height={14} />
+      {isSelected ? <LuFolderOpen size={13} /> : <LuFolder size={13} />}
       {folder.name}{" "}
       <span className="Sidebar__item__count">{folder.drawingIds.length}</span>
       <DropdownMenu.Root
@@ -86,14 +91,14 @@ export function FolderItem({
         </DropdownMenu.Trigger>
         <DropdownMenu.Content size="1">
           <DropdownMenu.Item onClick={() => setEditModalOpen(true)}>
-            Rename
+            Rename Folder
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DropdownMenu.Item
             color="red"
             onClick={() => setDeleteModalOpen(true)}
           >
-            Delete
+            Delete Folder
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
@@ -154,6 +159,8 @@ export function FolderItem({
 
           <DialogDescription size="2">
             Are you sure you want to delete <b>{folder.name}</b> folder?
+            <br />
+            Note: This action won't delete drawings inside the folder.
           </DialogDescription>
 
           <Flex gap="3" mt="4" justify="end">
