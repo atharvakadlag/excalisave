@@ -1,4 +1,5 @@
 import {
+  ExternalLinkIcon,
   GearIcon,
   HeartIcon,
   ListBulletIcon,
@@ -13,6 +14,8 @@ import { CreateFolder } from "../CreateFolder/CreateFolder.component";
 import { FolderItem } from "./components/FolderItem.component";
 import "./Sidebar.styles.scss";
 import { Placeholder } from "../Placeholder/Placeholder.component";
+import { browser } from "webextension-polyfill-ts";
+import { TabUtils } from "../../lib/utils/tab.utils";
 
 type SidebarProps = {
   onChangeSelected?: (selected: string) => void;
@@ -77,7 +80,15 @@ export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
           as="div"
           weight={"medium"}
           size={"1"}
-          onClick={() => props.onChangeSelected?.("Settings")}
+          onClick={async () => {
+            const activeTab = await TabUtils.getActiveTab();
+            const runtimeUrl = browser.runtime.getURL("options.html");
+            browser.tabs.create({
+              url: runtimeUrl,
+              openerTabId: activeTab?.id,
+              index: activeTab ? activeTab.index + 1 : undefined,
+            });
+          }}
           className={clsx(
             "Sidebar__item",
             props.selected === "Settings" && "Sidebar__item--selected"
@@ -85,6 +96,11 @@ export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
         >
           <GearIcon width="18" height="18" />
           Settings
+          <ExternalLinkIcon
+            style={{ marginLeft: "4px" }}
+            width="14"
+            height="14"
+          />
         </Text>
       </Flex>
 

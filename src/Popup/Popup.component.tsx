@@ -27,6 +27,7 @@ import { Placeholder } from "../components/Placeholder/Placeholder.component";
 import { Sidebar } from "../components/Sidebar/Sidebar.component";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { DrawingStore } from "../lib/drawing-store";
+import { XLogger } from "../lib/logger";
 import { TabUtils } from "../lib/utils/tab.utils";
 import { useCurrentDrawingId } from "./hooks/useCurrentDrawing.hook";
 import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
@@ -421,6 +422,7 @@ const Popup: React.FC = () => {
                   }
                 />
               ))}
+<<<<<<< HEAD
 
 <<<<<<< HEAD
             {sidebarSelected.startsWith("folder:") &&
@@ -432,9 +434,7 @@ const Popup: React.FC = () => {
                   message={<Text size={"2"}>Folder is empty.</Text>}
                 />
               ))}
-=======
             {sidebarSelected === "Settings" && <Settings />}
->>>>>>> 092bb6c (add settings view)
           </div>
         </Flex>
 
