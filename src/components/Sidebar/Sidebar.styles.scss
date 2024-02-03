@@ -20,4 +20,13 @@
       color: var(--accent-1);
     }
   }
+
+  &__newFolderBtn {
+    color: var(--gray-9);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--accent-10);
+    }
+  }
 }

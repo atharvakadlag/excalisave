@@ -3,60 +3,24 @@ import {
   ListBulletIcon,
   MagnifyingGlassIcon,
 } from "@radix-ui/react-icons";
-import { Box, Flex, Text } from "@radix-ui/themes";
+import { Box, Flex, Separator, Text } from "@radix-ui/themes";
 import { clsx } from "clsx";
-import React from "react";
+import React, { useEffect } from "react";
+import { HiOutlineFolder } from "react-icons/hi2";
+import { useFolders } from "../../Popup/hooks/useFolders.hook";
+import { CreateFolder } from "../CreateFolder/CreateFolder.component";
 import "./Sidebar.styles.scss";
+import { Folder } from "../../interfaces/folder.interface";
 
 type SidebarProps = {
   onChangeSelected?: (selected: string) => void;
+  folders: Folder[];
+  onCreateFolder: (name: string) => void;
+  onRemoveFolder: (id: string) => void;
   selected: string;
 };
 
-export function Sidebar(props: SidebarProps) {
-  // const [folders] = useState([
-  //   {
-  //     id: "1",
-  //     name: "Personal",
-  //   },
-  //   {
-  //     id: "2",
-  //     name: "Health",
-  //   },
-  //   {
-  //     id: "3",
-  //     name: "Travel",
-  //   },
-  //   {
-  //     id: "4",
-  //     name: "Entertainment",
-  //   },
-  //   {
-  //     id: "5",
-  //     name: "Education",
-  //   },
-  //   {
-  //     id: "6",
-  //     name: "Finance",
-  //   },
-  //   {
-  //     id: "7",
-  //     name: "Food",
-  //   },
-  //   {
-  //     id: "8",
-  //     name: "Sports",
-  //   },
-  //   {
-  //     id: "9",
-  //     name: "Technology",
-  //   },
-  //   {
-  //     id: "10",
-  //     name: "Music",
-  //   },
-  // ]);
-
+export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
   return (
     <Box
       style={{
@@ -107,43 +71,48 @@ export function Sidebar(props: SidebarProps) {
         </Text>
       </Flex>
 
-      {/* <Separator my="2" size={"4"} /> */}
+      <Separator my="2" size={"4"} />
 
-      {/* <Text
-        as="div"
-        weight={"bold"}
-        size={"1"}
-        style={{
-          paddingLeft: "10px",
-          color: "var(--gray-10)",
-          paddingBottom: "8px",
-        }}
-      >
-        Folders
-      </Text>
-
+      <Flex justify="between" width="100%" mt="1" px="1">
+        <Text
+          as="div"
+          weight={"bold"}
+          size={"1"}
+          style={{
+            flex: 1,
+            color: "var(--gray-10)",
+            paddingBottom: "8px",
+          }}
+        >
+          Folders
+        </Text>
+        <CreateFolder onCreateFolder={onCreateFolder} />
+      </Flex>
       <Flex
         direction={"column"}
         gap="1"
         style={{
-          height: "300px",
+          height: "268px",
           overflowY: "scroll",
         }}
       >
         {folders.map((folder) => (
           <Text
             as="div"
+            key={folder.id}
             weight={"medium"}
             size={"1"}
+            onClick={() => props.onChangeSelected?.(folder.id)}
             className={clsx(
               "Sidebar__item",
-              props.selected === "Results" && "Sidebar__item--selected"
+              props.selected === folder.id && "Sidebar__item--selected"
             )}
           >
+            <HiOutlineFolder width={14} height={14} />
             {folder.name}
           </Text>
         ))}
-      </Flex> */}
+      </Flex>
     </Box>
   );
 }

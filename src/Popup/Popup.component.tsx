@@ -1,5 +1,6 @@
 import {
   BookmarkIcon,
+  Cross1Icon,
   CrossCircledIcon,
   ExclamationTriangleIcon,
   HeartFilledIcon,
@@ -33,6 +34,7 @@ import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 import { XLogger } from "../lib/logger";
+import { useFolders } from "./hooks/useFolders.hook";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -40,6 +42,8 @@ const CalloutText = Callout.Text as any;
 const Popup: React.FC = () => {
   const [drawings, setDrawings] = React.useState<IDrawing[]>([]);
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
+  const { folders, createFolder, removeFolder, addDrawingToFolder } =
+    useFolders();
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const { currentDrawingId, inExcalidrawPage, setCurrentDrawingId } =
@@ -189,6 +193,18 @@ const Popup: React.FC = () => {
   };
 
   const filterDrawings = () => {
+    if (sidebarSelected?.startsWith("folder:")) {
+      const folder = folders.find((folder) => folder.id === sidebarSelected);
+
+      if (!folder) {
+        return [];
+      }
+
+      return drawings.filter((drawing) => {
+        return folder.drawingIds.includes(drawing.id);
+      });
+    }
+
     switch (sidebarSelected) {
       case "Favorites":
         return drawings.filter((drawing) => {
@@ -208,6 +224,31 @@ const Popup: React.FC = () => {
   };
 
   const filteredDrawings = filterDrawings();
+  console.log("FIltered", filteredDrawings);
+
+  const showDrawings = () => {
+    return (
+      <Grid columns="2" gapX="3" gapY="5" width="auto" pb="3" pt="3">
+        {filteredDrawings.map((drawing, index) => (
+          <Drawing
+            key={drawing.id}
+            index={index}
+            drawing={drawing}
+            folders={folders}
+            inExcalidrawPage={inExcalidrawPage}
+            favorite={favorites.includes(drawing.id)}
+            onClick={handleLoadItemWithConfirm}
+            isCurrent={currentDrawingId === drawing.id}
+            onRenameDrawing={onRenameDrawing}
+            onAddToFavorites={handleAddToFavorites}
+            onRemoveFromFavorites={handleRemoveFromFavorites}
+            onDeleteDrawing={onDeleteDrawing}
+            onAddToFolder={addDrawingToFolder}
+          />
+        ))}
+      </Grid>
+    );
+  };
 
   return (
     <Theme
@@ -271,38 +312,16 @@ const Popup: React.FC = () => {
           }}
         >
           <Sidebar
+            folders={folders}
+            onCreateFolder={createFolder}
+            onRemoveFolder={removeFolder}
             selected={sidebarSelected}
             onChangeSelected={(selected) => setSidebarSelected(selected)}
           />
           <div className="Popup__content">
             {sidebarSelected === "Favorites" &&
               (filteredDrawings.length >= 1 ? (
-                <>
-                  <Grid
-                    columns="2"
-                    gapX="3"
-                    gapY="5"
-                    width="auto"
-                    pb="8"
-                    pt="3"
-                  >
-                    {filteredDrawings.map((drawing, index) => (
-                      <Drawing
-                        key={drawing.id}
-                        index={index}
-                        drawing={drawing}
-                        inExcalidrawPage={inExcalidrawPage}
-                        onClick={handleLoadItemWithConfirm}
-                        favorite={true}
-                        isCurrent={currentDrawingId === drawing.id}
-                        onRenameDrawing={onRenameDrawing}
-                        onAddToFavorites={handleAddToFavorites}
-                        onRemoveFromFavorites={handleRemoveFromFavorites}
-                        onDeleteDrawing={onDeleteDrawing}
-                      />
-                    ))}
-                  </Grid>
-                </>
+                showDrawings()
               ) : (
                 <Placeholder
                   icon={<HeartFilledIcon width={"30"} height={"30"} />}
@@ -317,32 +336,7 @@ const Popup: React.FC = () => {
             {sidebarSelected === "Results" &&
               (searchTerm !== "" ? (
                 filteredDrawings.length >= 1 ? (
-                  <>
-                    <Grid
-                      columns="2"
-                      gapX="3"
-                      gapY="5"
-                      width="auto"
-                      pb="3"
-                      pt="3"
-                    >
-                      {filteredDrawings.map((drawing, index) => (
-                        <Drawing
-                          key={drawing.id}
-                          index={index}
-                          drawing={drawing}
-                          inExcalidrawPage={inExcalidrawPage}
-                          favorite={favorites.includes(drawing.id)}
-                          onClick={handleLoadItemWithConfirm}
-                          isCurrent={currentDrawingId === drawing.id}
-                          onRenameDrawing={onRenameDrawing}
-                          onAddToFavorites={handleAddToFavorites}
-                          onRemoveFromFavorites={handleRemoveFromFavorites}
-                          onDeleteDrawing={onDeleteDrawing}
-                        />
-                      ))}
-                    </Grid>
-                  </>
+                  showDrawings()
                 ) : (
                   <Placeholder
                     icon={<MagnifyingGlassIcon width={"30"} height={"30"} />}
@@ -360,32 +354,7 @@ const Popup: React.FC = () => {
 
             {(sidebarSelected === "All" || sidebarSelected === "") &&
               (filteredDrawings.length > 0 ? (
-                <>
-                  <Grid
-                    columns="2"
-                    gapX="3"
-                    gapY="5"
-                    width="auto"
-                    pb="3"
-                    pt="3"
-                  >
-                    {filteredDrawings.map((drawing, index) => (
-                      <Drawing
-                        key={drawing.id}
-                        drawing={drawing}
-                        index={index}
-                        inExcalidrawPage={inExcalidrawPage}
-                        onClick={handleLoadItemWithConfirm}
-                        isCurrent={currentDrawingId === drawing.id}
-                        favorite={favorites.includes(drawing.id)}
-                        onRenameDrawing={onRenameDrawing}
-                        onAddToFavorites={handleAddToFavorites}
-                        onRemoveFromFavorites={handleRemoveFromFavorites}
-                        onDeleteDrawing={onDeleteDrawing}
-                      />
-                    ))}
-                  </Grid>
-                </>
+                showDrawings()
               ) : (
                 <Placeholder
                   icon={<BookmarkIcon width={"30"} height={"30"} />}
@@ -398,6 +367,16 @@ const Popup: React.FC = () => {
                       button.
                     </Text>
                   }
+                />
+              ))}
+
+            {sidebarSelected.startsWith("folder:") &&
+              (filteredDrawings.length > 0 ? (
+                showDrawings()
+              ) : (
+                <Placeholder
+                  icon={<Cross1Icon width={"30"} height={"30"} />}
+                  message={<Text size={"2"}>Folder is empty.</Text>}
                 />
               ))}
           </div>
