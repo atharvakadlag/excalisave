@@ -1,16 +1,16 @@
 import {
-  Box,
-  Theme,
-  Text,
-  Container,
-  Heading,
   Avatar,
+  Box,
+  Container,
   Flex,
+  Heading,
+  Text,
+  Theme,
 } from "@radix-ui/themes";
 import React from "react";
+import { browser } from "webextension-polyfill-ts";
 import { ImpExp } from "../components/ImpExp/ImpExp.component";
 import "./Options.styles.scss";
-import { browser } from "webextension-polyfill-ts";
 
 export const Options: React.FC = () => {
   return (
@@ -49,7 +49,7 @@ export const Options: React.FC = () => {
             </Box>
           </Flex>
           <Box px="4">
-            <Heading as="h3" size={"4"} style={{ paddingBottom: "10px" }}>
+            <Heading as="h3" size={"5"} style={{ paddingBottom: "10px" }}>
               Import/Export:
             </Heading>
             <Text size={"2"} as="p" style={{ lineHeight: 1.1 }}>

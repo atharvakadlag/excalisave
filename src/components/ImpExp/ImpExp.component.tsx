@@ -286,21 +286,11 @@ export function ImpExp() {
   return (
     <Flex direction="column" gap={"3"}>
       <Box>
-        <Callout.Root size="1" color="red" role="alergt">
-          <Callout.Icon>
-            <ExclamationTriangleIcon />
-          </Callout.Icon>
-          <CalloutText>
-            Make sure you are on excalidraw.com tab before importing or
-            exporting. It won't work on other tabs.
-          </CalloutText>
-        </Callout.Root>
-
         <Callout.Root
           style={{
             marginTop: "8px",
           }}
-          size="1"
+          // size="1"
           color="blue"
           variant="soft"
         >
@@ -323,18 +313,16 @@ export function ImpExp() {
         />
         <Button
           onClick={() => document.getElementById("fileInput").click()}
-          variant="soft"
+          variant="surface"
           style={{ width: "100%" }}
-          size={"1"}
         >
           <UploadIcon width="14" height="14" />
           Import Backup (.zip)
         </Button>
         <Button
           onClick={onExportClick}
-          variant="soft"
+          variant="surface"
           style={{ width: "100%" }}
-          size={"1"}
         >
           <DownloadIcon width="14" height="14" />
           Export Backup (.zip)
