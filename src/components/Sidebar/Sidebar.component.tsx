@@ -2,6 +2,7 @@ import {
   HeartIcon,
   ListBulletIcon,
   MagnifyingGlassIcon,
+  PlusCircledIcon,
 } from "@radix-ui/react-icons";
 import { Box, Flex, Separator, Text } from "@radix-ui/themes";
 import { clsx } from "clsx";
@@ -10,6 +11,7 @@ import { Folder } from "../../interfaces/folder.interface";
 import { CreateFolder } from "../CreateFolder/CreateFolder.component";
 import { FolderItem } from "./components/FolderItem.component";
 import "./Sidebar.styles.scss";
+import { Placeholder } from "../Placeholder/Placeholder.component";
 
 type SidebarProps = {
   onChangeSelected?: (selected: string) => void;
@@ -108,6 +110,20 @@ export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
             onRenameFolder={props.onRenameFolder}
           />
         ))}
+        {folders.length === 0 && (
+          <Placeholder
+            message={
+              <Text
+                as="div"
+                size="1"
+                className="Placeholder__emptyFolersMessage"
+              >
+                Create a folder by clicking on plus icon to organize your
+                drawings
+              </Text>
+            }
+          />
+        )}
       </Flex>
     </Box>
   );

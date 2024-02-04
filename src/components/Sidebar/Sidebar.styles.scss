@@ -52,3 +52,18 @@
     }
   }
 }
+
+.Placeholder {
+  &:hover {
+    .Placeholder__emptyFolersMessage {
+      color: inherit;
+    }
+  }
+
+  &__emptyFolersMessage {
+    padding-left: 8px;
+    padding-right: 8px;
+    color: white;
+    transition: 3s ease-out;
+  }
+}

@@ -47,6 +47,10 @@ export function useFolders() {
   const addDrawingToFolder = async (drawingId: string, folderId: string) => {
     const newFolders = folders.map((folder) => {
       if (folder.id === folderId) {
+        if (folder.drawingIds.includes(drawingId)) {
+          return folder;
+        }
+
         return {
           ...folder,
           drawingIds: [...folder.drawingIds, drawingId],

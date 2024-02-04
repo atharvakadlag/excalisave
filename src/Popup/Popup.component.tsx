@@ -274,6 +274,11 @@ const Popup: React.FC = () => {
             index={index}
             drawing={drawing}
             folders={folders}
+            folderIdSelected={
+              sidebarSelected.startsWith("folder:")
+                ? sidebarSelected
+                : undefined
+            }
             inExcalidrawPage={inExcalidrawPage}
             favorite={favorites.includes(drawing.id)}
             onClick={handleLoadItemWithConfirm}
@@ -283,6 +288,7 @@ const Popup: React.FC = () => {
             onRemoveFromFavorites={handleRemoveFromFavorites}
             onDeleteDrawing={onDeleteDrawing}
             onAddToFolder={addDrawingToFolder}
+            onRemoveFromFolder={removeDrawingFromFolder}
           />
         ))}
       </Grid>

@@ -24,6 +24,7 @@ type DrawingProps = {
   inExcalidrawPage: boolean;
   drawing: IDrawing;
   folders: Folder[];
+  folderIdSelected?: string;
   onClick: (id: string) => void;
   onRenameDrawing?: (id: string, newName: string) => void;
   onDeleteDrawing?: (id: string) => void;
@@ -32,6 +33,7 @@ type DrawingProps = {
   onRemoveFromFavorites?: (id: string) => void;
 
   onAddToFolder: (drawingId: string, folderId: string) => void;
+  onRemoveFromFolder: (drawingId: string, folderId: string) => void;
 };
 
 export function Drawing(props: DrawingProps) {
@@ -118,6 +120,18 @@ export function Drawing(props: DrawingProps) {
               <DropdownMenu.Item onClick={() => setAddToFolderModalOpen(true)}>
                 Add to folder
               </DropdownMenu.Item>
+              {props.folderIdSelected && (
+                <DropdownMenu.Item
+                  onClick={() =>
+                    props.onRemoveFromFolder(
+                      props.drawing.id,
+                      props.folderIdSelected
+                    )
+                  }
+                >
+                  Remove from folder
+                </DropdownMenu.Item>
+              )}
               <DropdownMenu.Separator />
               <DropdownMenu.Item
                 disabled={!props.inExcalidrawPage}

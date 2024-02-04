@@ -1,8 +1,9 @@
 import { Button, Dialog, Flex, Text } from "@radix-ui/themes";
 import React from "react";
-import { HiOutlineFolder } from "react-icons/hi2";
-import { Folder } from "../../interfaces/folder.interface";
+import { LuFolder } from "react-icons/lu";
 import { IDrawing } from "../../interfaces/drawing.interface";
+import { Folder } from "../../interfaces/folder.interface";
+import { Placeholder } from "../Placeholder/Placeholder.component";
 
 const DialogDescription = Dialog.Description as any;
 
@@ -53,10 +54,19 @@ export function AddToFolderModal(props: CreateFolderProps) {
               onClick={() => handleAddToFolder(folder)}
               className={"Sidebar__item"}
             >
-              <HiOutlineFolder width={14} height={14} />
+              <LuFolder size={13} />
               {folder.name}
+              <span className="Sidebar__item__count">
+                {folder.drawingIds.length}
+              </span>
             </Text>
           ))}
+
+          {props.folders.length === 0 && (
+            <Placeholder
+              message={<Text size={"2"}>There are no folders yet</Text>}
+            />
+          )}
         </Flex>
 
         <Flex gap="3" mt="4" justify="end">
