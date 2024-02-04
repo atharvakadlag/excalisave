@@ -48,6 +48,8 @@ const Popup: React.FC = () => {
     renameFolder,
     removeFolder,
     addDrawingToFolder,
+    removeDrawingFromFolder,
+    removeDrawingFromAllFolders,
   } = useFolders();
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -159,7 +161,10 @@ const Popup: React.FC = () => {
         setCurrentDrawingId(undefined);
       }
 
-      await DrawingStore.deleteDrawing(id);
+      await Promise.allSettled([
+        removeDrawingFromAllFolders(id),
+        DrawingStore.deleteDrawing(id),
+      ]);
     } catch (error) {
       XLogger.error("Error deleting drawing", error);
     }

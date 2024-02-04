@@ -79,6 +79,18 @@ export function useFolders() {
     setFolders(newFolders);
   };
 
+  const removeDrawingFromAllFolders = async (drawingId: string) => {
+    const newFolders = folders.map((folder) => {
+      return {
+        ...folder,
+        drawingIds: folder.drawingIds.filter((id) => id !== drawingId),
+      };
+    });
+
+    await browser.storage.local.set({ folders: newFolders });
+    setFolders(newFolders);
+  };
+
   useEffect(() => {
     const loadFolders = async () => {
       const result: Record<string, Folder[]> =
@@ -99,5 +111,6 @@ export function useFolders() {
     removeFolder,
     addDrawingToFolder,
     removeDrawingFromFolder,
+    removeDrawingFromAllFolders,
   };
 }
