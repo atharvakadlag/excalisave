@@ -12,6 +12,8 @@ import {
 import React, { useState } from "react";
 import { IDrawing } from "../../interfaces/drawing.interface";
 import "./Drawing.styles.scss";
+import { AddToFolderModal } from "../AddToFolder/AddToFolder.component";
+import { Folder } from "../../interfaces/folder.interface";
 
 const DialogDescription = Dialog.Description as any;
 
@@ -21,17 +23,25 @@ type DrawingProps = {
   isCurrent: boolean;
   inExcalidrawPage: boolean;
   drawing: IDrawing;
+  folders: Folder[];
+  folderIdSelected?: string;
   onClick: (id: string) => void;
   onRenameDrawing?: (id: string, newName: string) => void;
   onDeleteDrawing?: (id: string) => void;
+
   onAddToFavorites?: (id: string) => void;
   onRemoveFromFavorites?: (id: string) => void;
+
+  onAddToFolder: (drawingId: string, folderId: string) => void;
+  onRemoveFromFolder: (drawingId: string, folderId: string) => void;
 };
 
 export function Drawing(props: DrawingProps) {
   const [newName, setNewName] = useState(props.drawing.name);
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [addToFolderModalOpen, setAddToFolderModalOpen] = useState(false);
 
   const handleRenameDrawing = () => {
     setEditModalOpen(false);
@@ -93,10 +103,7 @@ export function Drawing(props: DrawingProps) {
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content size="1">
-              <DropdownMenu.Item
-                // shortcut="⌘ E"
-                onClick={() => setEditModalOpen(true)}
-              >
+              <DropdownMenu.Item onClick={() => setEditModalOpen(true)}>
                 Rename
               </DropdownMenu.Item>
               <DropdownMenu.Item
@@ -110,7 +117,21 @@ export function Drawing(props: DrawingProps) {
               >
                 {props.favorite ? "Remove from favorites" : "Add to favorites"}
               </DropdownMenu.Item>
-              {/* <DropdownMenu.Item>Add to folder</DropdownMenu.Item> */}
+              <DropdownMenu.Item onClick={() => setAddToFolderModalOpen(true)}>
+                Add to folder
+              </DropdownMenu.Item>
+              {props.folderIdSelected && (
+                <DropdownMenu.Item
+                  onClick={() =>
+                    props.onRemoveFromFolder(
+                      props.drawing.id,
+                      props.folderIdSelected
+                    )
+                  }
+                >
+                  Remove from folder
+                </DropdownMenu.Item>
+              )}
               <DropdownMenu.Separator />
               <DropdownMenu.Item
                 disabled={!props.inExcalidrawPage}
@@ -152,6 +173,16 @@ export function Drawing(props: DrawingProps) {
               </Flex>
             </Dialog.Content>
           </Dialog.Root>
+
+          <AddToFolderModal
+            modalOpen={addToFolderModalOpen}
+            folders={props.folders}
+            drawing={props.drawing}
+            setModalOpen={setAddToFolderModalOpen}
+            onChooseFolder={async (folder) => {
+              await props.onAddToFolder?.(props.drawing.id, folder.id);
+            }}
+          />
 
           {/* -------- EDIT DIALOG ---------  */}
           <Dialog.Root

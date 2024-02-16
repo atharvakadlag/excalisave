@@ -4,63 +4,29 @@ import {
   HeartIcon,
   ListBulletIcon,
   MagnifyingGlassIcon,
+  PlusCircledIcon,
 } from "@radix-ui/react-icons";
-import { Box, Flex, Text } from "@radix-ui/themes";
+import { Box, Flex, Separator, Text } from "@radix-ui/themes";
 import { clsx } from "clsx";
 import React from "react";
+import { Folder } from "../../interfaces/folder.interface";
+import { CreateFolder } from "../CreateFolder/CreateFolder.component";
+import { FolderItem } from "./components/FolderItem.component";
 import "./Sidebar.styles.scss";
+import { Placeholder } from "../Placeholder/Placeholder.component";
 import { browser } from "webextension-polyfill-ts";
 import { TabUtils } from "../../lib/utils/tab.utils";
 
 type SidebarProps = {
   onChangeSelected?: (selected: string) => void;
+  folders: Folder[];
+  onCreateFolder: (name: string) => void;
+  onRemoveFolder: (id: string) => void;
+  onRenameFolder: (id: string, name: string) => void;
   selected: string;
 };
 
-export function Sidebar(props: SidebarProps) {
-  // const [folders] = useState([
-  //   {
-  //     id: "1",
-  //     name: "Personal",
-  //   },
-  //   {
-  //     id: "2",
-  //     name: "Health",
-  //   },
-  //   {
-  //     id: "3",
-  //     name: "Travel",
-  //   },
-  //   {
-  //     id: "4",
-  //     name: "Entertainment",
-  //   },
-  //   {
-  //     id: "5",
-  //     name: "Education",
-  //   },
-  //   {
-  //     id: "6",
-  //     name: "Finance",
-  //   },
-  //   {
-  //     id: "7",
-  //     name: "Food",
-  //   },
-  //   {
-  //     id: "8",
-  //     name: "Sports",
-  //   },
-  //   {
-  //     id: "9",
-  //     name: "Technology",
-  //   },
-  //   {
-  //     id: "10",
-  //     name: "Music",
-  //   },
-  // ]);
-
+export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
   return (
     <Box
       style={{
@@ -138,43 +104,58 @@ export function Sidebar(props: SidebarProps) {
         </Text>
       </Flex>
 
-      {/* <Separator my="2" size={"4"} /> */}
+      <Separator my="2" size={"4"} />
 
-      {/* <Text
-        as="div"
-        weight={"bold"}
-        size={"1"}
-        style={{
-          paddingLeft: "10px",
-          color: "var(--gray-10)",
-          paddingBottom: "8px",
-        }}
-      >
-        Folders
-      </Text>
-
+      <Flex justify="between" width="100%" mt="1" px="1">
+        <Text
+          as="div"
+          weight={"bold"}
+          size={"1"}
+          style={{
+            flex: 1,
+            color: "var(--gray-10)",
+            paddingBottom: "8px",
+          }}
+        >
+          Folders
+        </Text>
+        <CreateFolder onCreateFolder={onCreateFolder} />
+      </Flex>
       <Flex
         direction={"column"}
         gap="1"
         style={{
-          height: "300px",
+          height: "268px",
           overflowY: "scroll",
         }}
       >
         {folders.map((folder) => (
-          <Text
-            as="div"
-            weight={"medium"}
-            size={"1"}
-            className={clsx(
-              "Sidebar__item",
-              props.selected === "Results" && "Sidebar__item--selected"
-            )}
-          >
-            {folder.name}
-          </Text>
+          <FolderItem
+            key={folder.id}
+            folder={folder}
+            onChangeSelected={(folderId: string) =>
+              props.onChangeSelected?.(folderId)
+            }
+            isSelected={props.selected === folder.id}
+            onRemoveFolder={props.onRemoveFolder}
+            onRenameFolder={props.onRenameFolder}
+          />
         ))}
-      </Flex> */}
+        {folders.length === 0 && (
+          <Placeholder
+            message={
+              <Text
+                as="div"
+                size="1"
+                className="Placeholder__emptyFolersMessage"
+              >
+                Create a folder by clicking on plus icon to organize your
+                drawings
+              </Text>
+            }
+          />
+        )}
+      </Flex>
     </Box>
   );
 }

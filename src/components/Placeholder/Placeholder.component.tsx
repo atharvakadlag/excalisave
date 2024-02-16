@@ -13,6 +13,7 @@ export function Placeholder(props: PlaceholderProps) {
       justify={"center"}
       direction={"column"}
       gap={"4"}
+      className="Placeholder"
       height={"100%"}
       style={{
         borderRadius: "6px",
