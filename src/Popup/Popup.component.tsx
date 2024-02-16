@@ -33,7 +33,6 @@ import { useCurrentDrawingId } from "./hooks/useCurrentDrawing.hook";
 import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
-import { XLogger } from "../lib/logger";
 import { useFolders } from "./hooks/useFolders.hook";
 import "./Popup.styles.scss";
 import { Settings } from "../components/Settings/Settings.component";
