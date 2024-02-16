@@ -62,12 +62,23 @@ module.exports = {
       "execute-scripts",
       "newDrawing.ts"
     ),
+    "execute-scripts/export-store": path.join(
+      sourcePath,
+      "execute-scripts",
+      "export-store.ts"
+    ),
+    "execute-scripts/load-store": path.join(
+      sourcePath,
+      "execute-scripts",
+      "load-store.ts"
+    ),
     "content-scripts/listenDrawingUpdates": path.join(
       sourcePath,
       "ContentScript",
       "listenDrawingUpdates.ts"
     ),
     popup: path.join(sourcePath, "Popup", "index.tsx"),
+    options: path.join(sourcePath, "Options", "index.tsx"),
   },
 
   output: {
@@ -166,6 +177,13 @@ module.exports = {
       chunks: ["popup"],
       hash: true,
       filename: "popup.html",
+    }),
+    new HtmlWebpackPlugin({
+      template: path.join(viewsPath, "options.html"),
+      inject: "body",
+      chunks: ["options"],
+      hash: true,
+      filename: "options.html",
     }),
     // write css file(s) to build folder
     new MiniCssExtractPlugin({ filename: "css/[name].css" }),

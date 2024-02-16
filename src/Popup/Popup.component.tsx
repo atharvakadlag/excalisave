@@ -26,13 +26,13 @@ import { Placeholder } from "../components/Placeholder/Placeholder.component";
 import { Sidebar } from "../components/Sidebar/Sidebar.component";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { DrawingStore } from "../lib/drawing-store";
+import { XLogger } from "../lib/logger";
 import { TabUtils } from "../lib/utils/tab.utils";
 import "./Popup.styles.scss";
 import { useCurrentDrawingId } from "./hooks/useCurrentDrawing.hook";
 import { useDrawingLoading } from "./hooks/useDrawingLoading.hook";
 import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
-import { XLogger } from "../lib/logger";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;

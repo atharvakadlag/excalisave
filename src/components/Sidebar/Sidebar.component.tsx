@@ -1,4 +1,6 @@
 import {
+  ExternalLinkIcon,
+  GearIcon,
   HeartIcon,
   ListBulletIcon,
   MagnifyingGlassIcon,
@@ -7,6 +9,8 @@ import { Box, Flex, Text } from "@radix-ui/themes";
 import { clsx } from "clsx";
 import React from "react";
 import "./Sidebar.styles.scss";
+import { browser } from "webextension-polyfill-ts";
+import { TabUtils } from "../../lib/utils/tab.utils";
 
 type SidebarProps = {
   onChangeSelected?: (selected: string) => void;
@@ -104,6 +108,33 @@ export function Sidebar(props: SidebarProps) {
         >
           <MagnifyingGlassIcon width="18" height="18" />
           Search results
+        </Text>
+
+        <Text
+          as="div"
+          weight={"medium"}
+          size={"1"}
+          onClick={async () => {
+            const activeTab = await TabUtils.getActiveTab();
+            const runtimeUrl = browser.runtime.getURL("options.html");
+            browser.tabs.create({
+              url: runtimeUrl,
+              openerTabId: activeTab?.id,
+              index: activeTab ? activeTab.index + 1 : undefined,
+            });
+          }}
+          className={clsx(
+            "Sidebar__item",
+            props.selected === "Settings" && "Sidebar__item--selected"
+          )}
+        >
+          <GearIcon width="18" height="18" />
+          Settings
+          <ExternalLinkIcon
+            style={{ marginLeft: "4px" }}
+            width="14"
+            height="14"
+          />
         </Text>
       </Flex>
 
