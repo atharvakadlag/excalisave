@@ -125,7 +125,7 @@ export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
         direction={"column"}
         gap="1"
         style={{
-          height: "268px",
+          height: "230px",
           overflowY: "scroll",
         }}
       >
