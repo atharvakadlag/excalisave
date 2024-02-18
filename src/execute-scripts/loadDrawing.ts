@@ -4,10 +4,16 @@ import {
 } from "../ContentScript/content-script.utils";
 import { MessageType, SaveDrawingMessage } from "../constants/message.types";
 import { IDrawing } from "../interfaces/drawing.interface";
+import { createStore, entries, set, values } from "idb-keyval";
 import { DRAWING_ID_KEY_LS } from "../lib/constants";
 import { XLogger } from "../lib/logger";
 import { As } from "../lib/types.utils";
+import { FileId } from "@excalidraw/excalidraw/types/element/types";
+import { BinaryFileData } from "@excalidraw/excalidraw/types/types";
 const { browser } = require("webextension-polyfill-ts");
+
+// Were images are stored: https://github.com/excalidraw/excalidraw/blob/e8def8da8d5fcf9445aebdd996de3fee4cecf7ef/excalidraw-app/data/LocalData.ts#L24
+const filesStore = createStore("files-db", "files-store");
 
 type ScriptParams = {
   id: string;
@@ -22,6 +28,20 @@ type ScriptParams = {
 
     return;
   }
+
+  // To avoid removing other images while loaded current drawing, update the lastRetrived date
+  await entries(filesStore).then((entries) => {
+    for (const [id, imageData] of entries as [FileId, BinaryFileData][]) {
+      set(
+        id,
+        {
+          ...imageData,
+          lastRetrieved: new Date(2400, 0, 1).getTime(),
+        },
+        filesStore
+      );
+    }
+  });
 
   // Save data before load new drawing if there is a current drawing
   const currentDrawingId = localStorage.getItem(DRAWING_ID_KEY_LS);
