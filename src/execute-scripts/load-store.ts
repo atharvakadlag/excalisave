@@ -35,6 +35,8 @@ type ScriptParams = {
     const fileIds = Object.keys(files);
     for (const fileId of fileIds) {
       const file = files[fileId];
+      // Update lastRetrieved date to avoid images being removed by cleanup process
+      file.lastRetrieved = new Date(2500, 0, 1).getTime();
 
       if (fileIdsToUpdate.includes(fileId)) {
         // Update if exists
