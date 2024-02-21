@@ -8,15 +8,18 @@
 - 🖼️ Preview your drawings
 - 🔎 Search your drawings
 - ❤️ Favorites
+- 📂 Organize your drawings in folders
+- 📤 Import/Export
 - and more...
 
-<img width="1580" alt="Screenshot" src="https://github.com/dantecalderon/excalisave/assets/18385321/5fd2b45d-e4fa-44cc-9d90-786e70609fc1">
+<img width="1397" alt="Screenshot 2024-02-17 at 11 36 48 PM" src="https://github.com/dantecalderon/excalisave/assets/18385321/f7282312-7e41-40dd-a5ac-604c9b8de6fa">
+
 
 ## 📥 Install
 
 | [![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png)](https://chrome.google.com/webstore/detail/excalisave/obnjfbgikjcdfnbnmdamffacjfpankih) | [![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png)](https://addons.mozilla.org/en-US/firefox/addon/excalisave/) |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 88 & later ✔                                                                                  | To be published                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 88 & later ✔                                                                                                                                                                     | To be published                                                                                                                                           |
 
 ## ⚒️ Development
 

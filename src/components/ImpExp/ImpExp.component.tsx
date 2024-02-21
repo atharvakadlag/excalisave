@@ -1,11 +1,10 @@
 import { BinaryFiles } from "@excalidraw/excalidraw/types/types";
 import {
   DownloadIcon,
-  ExclamationTriangleIcon,
   InfoCircledIcon,
   UploadIcon,
 } from "@radix-ui/react-icons";
-import { Box, Button, Callout, Flex, Text } from "@radix-ui/themes";
+import { Box, Button, Callout, Flex } from "@radix-ui/themes";
 import FileSaver from "file-saver";
 import JSZip from "jszip";
 import React, { ChangeEvent, useEffect } from "react";
@@ -16,7 +15,9 @@ import {
   SaveNewDrawingMessage,
 } from "../../constants/message.types";
 import { IDrawing } from "../../interfaces/drawing.interface";
+import { Folder } from "../../interfaces/folder.interface";
 import { XLogger } from "../../lib/logger";
+import { keyBy } from "../../lib/utils/array.utils";
 import { RandomUtils } from "../../lib/utils/random.utils";
 import { TabUtils } from "../../lib/utils/tab.utils";
 import { parseDataJSON } from "./helpers/import.helpers";
@@ -141,18 +142,22 @@ export function ImpExp() {
             files: ["./js/execute-scripts/load-store.bundle.js"],
           });
 
-          const favorites: string[] = dataJSON?.favorites || [];
+          let favorites: string[] = dataJSON?.favorites || [];
+          let folders: Folder[] = dataJSON?.folders || [];
 
-          // Since we are creating new ids for all the drawings, we need to update the favorites to use the new ids
-          const favoritesToImport: string[] = [];
+          XLogger.debug("Importing data", { favorites, folders });
+
+          const oldToNewIds: Record<string, string> = {};
 
           // Import drawings
           drawings.forEach((drawing) => {
             XLogger.debug("Importing drawing", drawing);
             const newId = `drawing:${RandomUtils.generateRandomId()}`;
 
-            if (favorites?.includes(drawing.excalisave?.id)) {
-              favoritesToImport.push(newId);
+            if (drawing.excalisave?.id) {
+              oldToNewIds[drawing.excalisave?.id] = newId;
+            } else {
+              return;
             }
 
             const newDrawingMessage: SaveNewDrawingMessage = {
@@ -173,30 +178,89 @@ export function ImpExp() {
 
             XLogger.debug("Importing drawing", newDrawingMessage);
 
+            // STORE: Save new drawing
             browser.runtime.sendMessage(newDrawingMessage);
           });
 
-          // Import favorites
-          XLogger.debug("Importing favorites", favoritesToImport);
+          XLogger.debug("Old to new drawing ids", oldToNewIds);
 
-          if (favoritesToImport.length > 0) {
-            const favorites = await browser.storage.local.get("favorites");
+          // Replace old ids with new ids
+          favorites = favorites
+            .map((favorite) => oldToNewIds[favorite])
+            .filter(Boolean);
+
+          if (favorites.length > 0) {
+            const existentFavorites =
+              await browser.storage.local.get("favorites");
+
             const newFavorites = new Set([
-              ...(favorites.favorites || []),
-              ...favoritesToImport,
+              ...(existentFavorites.favorites || []),
+              ...favorites,
             ]);
 
+            // STORE: Save favorites
             await browser.storage.local.set({
               favorites: Array.from(newFavorites),
             });
+
+            XLogger.debug("Imported favorites", newFavorites);
           }
+
+          const existentFolders: Folder[] =
+            (await browser.storage.local.get("folders"))?.folders || [];
+
+          const existentFoldersMap = keyBy(existentFolders, "id");
+
+          folders = folders.map((folder) => {
+            return {
+              ...folder,
+              drawingIds: folder.drawingIds
+                .map((drawingId) => {
+                  return oldToNewIds[drawingId];
+                })
+                .filter(Boolean),
+            };
+          });
+
+          const foldersMap = keyBy(folders, "id");
+
+          const newFolders = existentFolders.map((existentFolder) => {
+            const newFolder = foldersMap[existentFolder.id];
+
+            if (newFolder) {
+              return {
+                ...existentFolder,
+                drawingIds: Array.from(
+                  new Set([
+                    ...existentFolder.drawingIds,
+                    ...newFolder.drawingIds,
+                  ])
+                ),
+              };
+            }
+
+            return existentFolder;
+          });
+
+          folders.forEach((folder) => {
+            if (!existentFoldersMap[folder.id]) {
+              newFolders.push(folder);
+            }
+          });
+
+          XLogger.debug("Importing folders", newFolders);
+
+          // STORE: Save folders
+          await browser.storage.local.set({
+            folders: newFolders,
+          });
 
           XLogger.debug("Finished importing drawings");
         } catch (error) {
           XLogger.error("Error while reading zip file", error);
         } finally {
           // After import reload, this is because can't import a second time
-          // TODO: Investigate why can't import a second time
+          // TODO: Investigate why can't import a second time without reload
           window.location.reload();
         }
       };
@@ -211,7 +275,7 @@ export function ImpExp() {
 
   useEffect(() => {
     browser.runtime.onMessage.addListener(async (message: ExportStore) => {
-      console.log("MEssage ", message);
+      console.log("Message received", message);
       if (message.type === MessageType.EXPORT_STORE) {
         const result = await browser.storage.local.get();
 
@@ -224,9 +288,11 @@ export function ImpExp() {
 
         const zipFile = new JSZip();
 
-        // favorites
+        // Include favorites and folders
         const favorites: string[] = result["favorites"] || [];
-        zipFile.file("data.json", JSON.stringify({ favorites }));
+        const folders: Folder[] = result["folders"] || [];
+
+        zipFile.file("data.json", JSON.stringify({ favorites, folders }));
 
         // drawings
         drawings.forEach((drawing) => {
