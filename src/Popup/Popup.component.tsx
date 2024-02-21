@@ -84,7 +84,6 @@ const Popup: React.FC = () => {
       const result: Record<string, IDrawing> =
         await browser.storage.local.get();
 
-      console.log(Object.values(result));
       const newDrawings: IDrawing[] = Object.values(result).filter(
         (drawing: IDrawing) => drawing?.id?.startsWith?.("drawing:")
       );
@@ -112,6 +111,23 @@ const Popup: React.FC = () => {
     };
 
     browser.storage.onChanged.addListener(onDrawingChanged);
+
+    browser.storage.session
+      .get("lastFileCleanupDate")
+      .then(async ({ lastFileCleanupDate }) => {
+        const currentDate = new Date().getTime();
+
+        // Run cleanup process every 3 days
+        // Condition is checked every time popup is opened
+        const Ndays = 3 * 24 * 60 * 60 * 1000;
+        const hasPassedNDays = currentDate - lastFileCleanupDate > Ndays;
+        if (hasPassedNDays || !lastFileCleanupDate) {
+          XLogger.debug("N days passed. Cleaning up old files");
+          await browser.storage.session.set({
+            lastFileCleanupDate: currentDate,
+          });
+        }
+      });
 
     return () => {
       browser.storage.onChanged.removeListener(onDrawingChanged);
@@ -294,10 +310,6 @@ const Popup: React.FC = () => {
       </Grid>
     );
   };
-  console.log(
-    "❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ️Drawings",
-    filteredDrawings
-  );
 
   return (
     <Theme

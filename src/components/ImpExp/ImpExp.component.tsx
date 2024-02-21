@@ -166,7 +166,7 @@ export function ImpExp() {
                 // Generate new id to avoid to overwrite existing drawings and data loss
                 // TODO: Add a way to merge drawings with the same id
                 id: newId,
-                name: drawing.excalisave?.name + " (imported)",
+                name: drawing.excalisave?.name + "(2)",
                 imageBase64: drawing.excalisave?.imageBase64,
                 viewBackgroundColor: drawing.appState?.viewBackgroundColor,
                 excalidraw: JSON.stringify(drawing.elements),
