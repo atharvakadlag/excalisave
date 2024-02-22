@@ -6,6 +6,7 @@ export enum MessageType {
   SAVE_DRAWING = "SAVE_DRAWING",
   SAVE_NEW_DRAWING = "SAVE_NEW_DRAWING",
   EXPORT_STORE = "EXPORT_STORE",
+  CLEANUP_FILES = "CLEANUP_FILES",
 }
 
 export type SaveNewDrawingMessage = {
@@ -40,5 +41,12 @@ export type ExportStore = {
   type: MessageType.EXPORT_STORE;
   payload: {
     files: Record<string, BinaryFileData>;
+  };
+};
+
+export type CleanupFiles = {
+  type: MessageType.CLEANUP_FILES;
+  payload: {
+    fileIds: string[];
   };
 };
