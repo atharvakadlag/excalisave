@@ -35,7 +35,7 @@ import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 import { useFolders } from "./hooks/useFolders.hook";
 import "./Popup.styles.scss";
-import { CleanupFiles, MessageType } from "../constants/message.types";
+import { CleanupFilesMessage, MessageType } from "../constants/message.types";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -120,7 +120,7 @@ const Popup: React.FC = () => {
 
         // Run cleanup process every 3 days
         // Condition is checked every time popup is opened
-        const Ndays = 10 * 1000;
+        const Ndays = 1000 * 60 * 60 * 24 * 3;
         const hasPassedNDays = currentDate - lastFileCleanupDate > Ndays;
         if (hasPassedNDays || !lastFileCleanupDate) {
           XLogger.debug("N days passed. Cleaning up old files");
@@ -149,7 +149,7 @@ const Popup: React.FC = () => {
                 tabId: activeTab.id,
                 executionTimestamp: currentDate,
               },
-            } as CleanupFiles),
+            } as CleanupFilesMessage),
             browser.storage.session.set({
               lastFileCleanupDate: currentDate,
             }),

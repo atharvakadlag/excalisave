@@ -37,14 +37,14 @@ export type SaveDrawingMessage = {
   };
 };
 
-export type ExportStore = {
+export type ExportStoreMessage = {
   type: MessageType.EXPORT_STORE;
   payload: {
     files: Record<string, BinaryFileData>;
   };
 };
 
-export type CleanupFiles = {
+export type CleanupFilesMessage = {
   type: MessageType.CLEANUP_FILES;
   payload: {
     tabId: number;

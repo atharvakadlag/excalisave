@@ -1,6 +1,6 @@
 import { BinaryFileData } from "@excalidraw/excalidraw/types/types";
 import { createStore, values } from "idb-keyval";
-import { ExportStore, MessageType } from "../constants/message.types";
+import { ExportStoreMessage, MessageType } from "../constants/message.types";
 import { keyBy } from "../lib/utils/array.utils";
 const { browser } = require("webextension-polyfill-ts");
 
@@ -17,7 +17,7 @@ const filesStore = createStore("files-db", "files-store");
     payload: {
       files,
     },
-  } as ExportStore);
+  } as ExportStoreMessage);
 
   // Close tab after send message
   window.close();

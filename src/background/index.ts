@@ -1,6 +1,6 @@
 import { browser } from "webextension-polyfill-ts";
 import {
-  CleanupFiles,
+  CleanupFilesMessage,
   MessageType,
   SaveDrawingMessage,
   SaveNewDrawingMessage,
@@ -23,7 +23,7 @@ browser.runtime.onInstalled.addListener(async () => {
 
 browser.runtime.onMessage.addListener(
   async (
-    message: SaveDrawingMessage | SaveNewDrawingMessage | CleanupFiles,
+    message: SaveDrawingMessage | SaveNewDrawingMessage | CleanupFilesMessage,
     _sender: any
   ) => {
     try {
