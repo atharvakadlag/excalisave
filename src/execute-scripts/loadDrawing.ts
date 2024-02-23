@@ -29,8 +29,8 @@ type ScriptParams = {
     return;
   }
 
-  // To avoid images being removed by cleanup proess,
-  // update the lastRetrived date of other drawings
+  // To avoid images being removed by cleanup process,
+  // update the lastRetrived date of other drawings when load the new drawing.
   await entries(filesStore).then((entries) => {
     for (const [id, imageData] of entries as [FileId, BinaryFileData][]) {
       set(

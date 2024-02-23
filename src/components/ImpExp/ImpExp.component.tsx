@@ -276,7 +276,6 @@ export function ImpExp() {
   useEffect(() => {
     browser.runtime.onMessage.addListener(
       async (message: ExportStoreMessage) => {
-        console.log("Message received", message);
         if (message.type === MessageType.EXPORT_STORE) {
           const result = await browser.storage.local.get();
 

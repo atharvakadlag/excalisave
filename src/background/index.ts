@@ -98,6 +98,8 @@ browser.runtime.onMessage.addListener(
 
           const uniqueImagesUsed = Array.from(new Set(imagesUsed));
 
+          XLogger.log("Used fileIds", uniqueImagesUsed);
+
           // This workaround is to pass params to script, it's ugly but it works
           await browser.scripting.executeScript({
             target: {
@@ -113,8 +115,6 @@ browser.runtime.onMessage.addListener(
             target: { tabId: message.payload.tabId },
             files: ["./js/execute-scripts/delete-unused-files.bundle.js"],
           });
-
-          XLogger.log("Used fileIds", uniqueImagesUsed);
 
           break;
         default:
