@@ -35,6 +35,7 @@ import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 import { useFolders } from "./hooks/useFolders.hook";
 import "./Popup.styles.scss";
+import { CleanupFiles, MessageType } from "../constants/message.types";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -119,13 +120,40 @@ const Popup: React.FC = () => {
 
         // Run cleanup process every 3 days
         // Condition is checked every time popup is opened
-        const Ndays = 3 * 24 * 60 * 60 * 1000;
+        const Ndays = 10 * 1000;
         const hasPassedNDays = currentDate - lastFileCleanupDate > Ndays;
         if (hasPassedNDays || !lastFileCleanupDate) {
           XLogger.debug("N days passed. Cleaning up old files");
-          await browser.storage.session.set({
-            lastFileCleanupDate: currentDate,
-          });
+
+          const activeTab = await TabUtils.getActiveTab();
+
+          XLogger.debug("Active tab", activeTab);
+          if (
+            !activeTab ||
+            !activeTab.url?.startsWith("https://excalidraw.com")
+          ) {
+            XLogger.error(
+              "Error loading drawing: No active tab or drawing found",
+              {
+                activeTab,
+              }
+            );
+
+            return;
+          }
+
+          await Promise.all([
+            browser.runtime.sendMessage({
+              type: MessageType.CLEANUP_FILES,
+              payload: {
+                tabId: activeTab.id,
+                executionTimestamp: currentDate,
+              },
+            } as CleanupFiles),
+            browser.storage.session.set({
+              lastFileCleanupDate: currentDate,
+            }),
+          ]);
         }
       });
 

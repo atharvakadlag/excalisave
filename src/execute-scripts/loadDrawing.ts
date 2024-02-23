@@ -37,6 +37,7 @@ type ScriptParams = {
         id,
         {
           ...imageData,
+          // Dear future developer (if humanity persists), kindly update this before the year 2400
           lastRetrieved: new Date(2400, 0, 1).getTime(),
         },
         filesStore

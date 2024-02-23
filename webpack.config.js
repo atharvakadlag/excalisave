@@ -67,6 +67,11 @@ module.exports = {
       "execute-scripts",
       "export-store.ts"
     ),
+    "execute-scripts/delete-unused-files": path.join(
+      sourcePath,
+      "execute-scripts",
+      "delete-unused-files.ts"
+    ),
     "execute-scripts/load-store": path.join(
       sourcePath,
       "execute-scripts",

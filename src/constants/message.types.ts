@@ -47,6 +47,7 @@ export type ExportStore = {
 export type CleanupFiles = {
   type: MessageType.CLEANUP_FILES;
   payload: {
-    fileIds: string[];
+    tabId: number;
+    executionTimestamp: number;
   };
 };
