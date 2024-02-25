@@ -30,10 +30,10 @@ export function AddToFolderModal(props: CreateFolderProps) {
         style={{ maxWidth: 300, paddingTop: 22, paddingBottom: 20 }}
         size="1"
       >
-        <Dialog.Title size={"3"}>Add drawing to folder</Dialog.Title>
+        <Dialog.Title size={"3"}>Add drawing to collection</Dialog.Title>
 
         <DialogDescription size="2">
-          Add "<b>{props.drawing.name}</b>" to folder:
+          Add "<b>{props.drawing.name}</b>" to collection:
         </DialogDescription>
 
         <Flex

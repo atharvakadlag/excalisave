@@ -118,7 +118,7 @@ export function Drawing(props: DrawingProps) {
                 {props.favorite ? "Remove from favorites" : "Add to favorites"}
               </DropdownMenu.Item>
               <DropdownMenu.Item onClick={() => setAddToFolderModalOpen(true)}>
-                Add to folder
+                Add to collection
               </DropdownMenu.Item>
               {props.folderIdSelected && (
                 <DropdownMenu.Item
@@ -129,7 +129,7 @@ export function Drawing(props: DrawingProps) {
                     )
                   }
                 >
-                  Remove from folder
+                  Remove from collection
                 </DropdownMenu.Item>
               )}
               <DropdownMenu.Separator />
