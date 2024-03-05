@@ -10,7 +10,7 @@ import JSZip from "jszip";
 import React, { ChangeEvent, useEffect } from "react";
 import { browser } from "webextension-polyfill-ts";
 import {
-  ExportStore,
+  ExportStoreMessage,
   MessageType,
   SaveNewDrawingMessage,
 } from "../../constants/message.types";
@@ -166,7 +166,7 @@ export function ImpExp() {
                 // Generate new id to avoid to overwrite existing drawings and data loss
                 // TODO: Add a way to merge drawings with the same id
                 id: newId,
-                name: drawing.excalisave?.name + " (imported)",
+                name: drawing.excalisave?.name + "(2)",
                 imageBase64: drawing.excalisave?.imageBase64,
                 viewBackgroundColor: drawing.appState?.viewBackgroundColor,
                 excalidraw: JSON.stringify(drawing.elements),
@@ -274,79 +274,80 @@ export function ImpExp() {
   };
 
   useEffect(() => {
-    browser.runtime.onMessage.addListener(async (message: ExportStore) => {
-      console.log("Message received", message);
-      if (message.type === MessageType.EXPORT_STORE) {
-        const result = await browser.storage.local.get();
+    browser.runtime.onMessage.addListener(
+      async (message: ExportStoreMessage) => {
+        if (message.type === MessageType.EXPORT_STORE) {
+          const result = await browser.storage.local.get();
 
-        const drawings: IDrawing[] = [];
-        Object.entries(result).forEach(([key, value]) => {
-          if (key.startsWith("drawing")) {
-            drawings.push(value);
-          }
-        });
-
-        const zipFile = new JSZip();
-
-        // Include favorites and folders
-        const favorites: string[] = result["favorites"] || [];
-        const folders: Folder[] = result["folders"] || [];
-
-        zipFile.file("data.json", JSON.stringify({ favorites, folders }));
-
-        // drawings
-        drawings.forEach((drawing) => {
-          const elements = JSON.parse(drawing.data.excalidraw);
-
-          // Filter files used in the drawing elements
-          const files: BinaryFiles = {};
-          for (const element of elements) {
-            if (
-              !element.isDeleted &&
-              "fileId" in element &&
-              element.fileId &&
-              message.payload.files[element.fileId]
-            ) {
-              files[element.fileId] = message.payload.files[element.fileId];
+          const drawings: IDrawing[] = [];
+          Object.entries(result).forEach(([key, value]) => {
+            if (key.startsWith("drawing")) {
+              drawings.push(value);
             }
-          }
+          });
 
-          // This structure follows the .excalidraw file structure, so it can be imported independently without needing to install the extension.
-          const drawingToExport: any = {
-            elements,
-            version: 2, // TODO: Should we get the version from source code? https://github.com/excalidraw/excalidraw/blob/master/packages/excalidraw/constants.ts#L261
-            type: "excalidraw",
-            source: "https://excalidraw.com", // TODO: Support self hosting endpoints
-            appState: {
-              gridSize: null,
-              viewBackgroundColor: drawing.viewBackgroundColor,
-            },
-            // Excalisave related data
-            excalisave: {
-              id: drawing.id,
-              createdAt: drawing.createdAt,
-              imageBase64: drawing.imageBase64,
-              name: drawing.name,
-            },
-            files,
-          };
+          const zipFile = new JSZip();
 
-          zipFile
-            .folder("drawings")
-            .file(
-              `${drawing.id.replace("drawing:", "")}.excalidraw`,
-              JSON.stringify(drawingToExport)
-            );
-        });
+          // Include favorites and folders
+          const favorites: string[] = result["favorites"] || [];
+          const folders: Folder[] = result["folders"] || [];
 
-        const fileBlob = await zipFile.generateAsync({ type: "blob" });
+          zipFile.file("data.json", JSON.stringify({ favorites, folders }));
 
-        FileSaver.saveAs(
-          fileBlob,
-          `excalisave-backup-${new Date().toISOString()}.zip`
-        );
+          // drawings
+          drawings.forEach((drawing) => {
+            const elements = JSON.parse(drawing.data.excalidraw);
+
+            // Filter files used in the drawing elements
+            const files: BinaryFiles = {};
+            for (const element of elements) {
+              if (
+                !element.isDeleted &&
+                "fileId" in element &&
+                element.fileId &&
+                message.payload.files[element.fileId]
+              ) {
+                files[element.fileId] = message.payload.files[element.fileId];
+              }
+            }
+
+            // This structure follows the .excalidraw file structure, so it can be imported independently without needing to install the extension.
+            const drawingToExport: any = {
+              elements,
+              version: 2, // TODO: Should we get the version from source code? https://github.com/excalidraw/excalidraw/blob/master/packages/excalidraw/constants.ts#L261
+              type: "excalidraw",
+              source: "https://excalidraw.com", // TODO: Support self hosting endpoints
+              appState: {
+                gridSize: null,
+                viewBackgroundColor: drawing.viewBackgroundColor,
+              },
+              // Excalisave related data
+              excalisave: {
+                id: drawing.id,
+                createdAt: drawing.createdAt,
+                imageBase64: drawing.imageBase64,
+                name: drawing.name,
+              },
+              files,
+            };
+
+            zipFile
+              .folder("drawings")
+              .file(
+                `${drawing.id.replace("drawing:", "")}.excalidraw`,
+                JSON.stringify(drawingToExport)
+              );
+          });
+
+          const fileBlob = await zipFile.generateAsync({ type: "blob" });
+
+          FileSaver.saveAs(
+            fileBlob,
+            `excalisave-backup-${new Date().toISOString()}.zip`
+          );
+        }
       }
-    });
+    );
   }, []);
 
   return (

@@ -35,6 +35,7 @@ import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 import { useFolders } from "./hooks/useFolders.hook";
 import "./Popup.styles.scss";
+import { CleanupFilesMessage, MessageType } from "../constants/message.types";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -84,7 +85,6 @@ const Popup: React.FC = () => {
       const result: Record<string, IDrawing> =
         await browser.storage.local.get();
 
-      console.log(Object.values(result));
       const newDrawings: IDrawing[] = Object.values(result).filter(
         (drawing: IDrawing) => drawing?.id?.startsWith?.("drawing:")
       );
@@ -112,6 +112,50 @@ const Popup: React.FC = () => {
     };
 
     browser.storage.onChanged.addListener(onDrawingChanged);
+
+    browser.storage.session
+      .get("lastFileCleanupDate")
+      .then(async ({ lastFileCleanupDate }) => {
+        const currentDate = new Date().getTime();
+
+        // Run cleanup process every 3 days
+        // Condition is checked every time popup is opened
+        const Ndays = 1000 * 60 * 60 * 24 * 3;
+        const hasPassedNDays = currentDate - lastFileCleanupDate > Ndays;
+        if (hasPassedNDays || !lastFileCleanupDate) {
+          XLogger.debug("N days passed. Cleaning up old files");
+
+          const activeTab = await TabUtils.getActiveTab();
+
+          XLogger.debug("Active tab", activeTab);
+          if (
+            !activeTab ||
+            !activeTab.url?.startsWith("https://excalidraw.com")
+          ) {
+            XLogger.error(
+              "Error loading drawing: No active tab or drawing found",
+              {
+                activeTab,
+              }
+            );
+
+            return;
+          }
+
+          await Promise.all([
+            browser.runtime.sendMessage({
+              type: MessageType.CLEANUP_FILES,
+              payload: {
+                tabId: activeTab.id,
+                executionTimestamp: currentDate,
+              },
+            } as CleanupFilesMessage),
+            browser.storage.session.set({
+              lastFileCleanupDate: currentDate,
+            }),
+          ]);
+        }
+      });
 
     return () => {
       browser.storage.onChanged.removeListener(onDrawingChanged);
@@ -294,10 +338,6 @@ const Popup: React.FC = () => {
       </Grid>
     );
   };
-  console.log(
-    "❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ❤ ️Drawings",
-    filteredDrawings
-  );
 
   return (
     <Theme
