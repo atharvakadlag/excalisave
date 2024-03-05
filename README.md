@@ -8,12 +8,11 @@
 - 🖼️ Preview your drawings
 - 🔎 Search your drawings
 - ❤️ Favorites
-- 📂 Organize your drawings in folders
+- 📂 Organize your drawings in collections
 - 📤 Import/Export
 - and more...
 
 <img width="1397" alt="Screenshot 2024-02-17 at 11 36 48 PM" src="https://github.com/dantecalderon/excalisave/assets/18385321/f7282312-7e41-40dd-a5ac-604c9b8de6fa">
-
 
 ## 📥 Install
 

@@ -117,7 +117,7 @@ export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
             paddingBottom: "8px",
           }}
         >
-          Folders
+          Collections
         </Text>
         <CreateFolder onCreateFolder={onCreateFolder} />
       </Flex>

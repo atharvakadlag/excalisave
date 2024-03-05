@@ -91,14 +91,14 @@ export function FolderItem({
         </DropdownMenu.Trigger>
         <DropdownMenu.Content size="1">
           <DropdownMenu.Item onClick={() => setEditModalOpen(true)}>
-            Rename Folder
+            Rename Collection
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DropdownMenu.Item
             color="red"
             onClick={() => setDeleteModalOpen(true)}
           >
-            Delete Folder
+            Delete Collection
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
@@ -111,10 +111,10 @@ export function FolderItem({
           style={{ maxWidth: 450, paddingTop: 22, paddingBottom: 20 }}
           size="1"
         >
-          <Dialog.Title size={"4"}>Rename Folder</Dialog.Title>
+          <Dialog.Title size={"4"}>Rename Collection</Dialog.Title>
 
           <DialogDescription size="2">
-            Edit <b>{folder.name}</b> folder:
+            Edit <b>{folder.name}</b> collection:
           </DialogDescription>
 
           <Flex direction="column" mt="3">
@@ -155,12 +155,12 @@ export function FolderItem({
           style={{ maxWidth: 450, paddingTop: 22, paddingBottom: 20 }}
           size="1"
         >
-          <Dialog.Title size={"4"}>Delete Folder</Dialog.Title>
+          <Dialog.Title size={"4"}>Delete Collection</Dialog.Title>
 
           <DialogDescription size="2">
-            Are you sure you want to delete <b>{folder.name}</b> folder?
+            Are you sure you want to delete <b>{folder.name}</b> collection?
             <br />
-            Note: This action won't delete drawings inside the folder.
+            Note: This action won't delete drawings inside the collection.
           </DialogDescription>
 
           <Flex gap="3" mt="4" justify="end">
