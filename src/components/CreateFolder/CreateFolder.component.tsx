@@ -20,7 +20,10 @@ export function CreateFolder(props: CreateFolderProps) {
 
   return (
     <>
-      <Box title="Create new folder" onClick={() => setCreateModalOpen(true)}>
+      <Box
+        title="Create new collection"
+        onClick={() => setCreateModalOpen(true)}
+      >
         <PlusCircledIcon
           className="Sidebar__newFolderBtn"
           width="14"
@@ -35,10 +38,10 @@ export function CreateFolder(props: CreateFolderProps) {
           style={{ maxWidth: 450, paddingTop: 22, paddingBottom: 20 }}
           size="1"
         >
-          <Dialog.Title size={"3"}>Create Folder</Dialog.Title>
+          <Dialog.Title size={"3"}>Create Collection</Dialog.Title>
 
           <DialogDescription size="2">
-            Give your folder a name
+            Give your collection a name
           </DialogDescription>
 
           <Flex direction="column" mt="3">

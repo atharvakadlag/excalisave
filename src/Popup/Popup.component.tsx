@@ -467,7 +467,7 @@ const Popup: React.FC = () => {
               ) : (
                 <Placeholder
                   icon={<Cross1Icon width={"30"} height={"30"} />}
-                  message={<Text size={"2"}>Folder is empty.</Text>}
+                  message={<Text size={"2"}>Collection is empty.</Text>}
                 />
               ))}
           </div>

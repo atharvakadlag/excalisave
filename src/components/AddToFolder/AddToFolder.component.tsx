@@ -64,7 +64,7 @@ export function AddToFolderModal(props: CreateFolderProps) {
 
           {props.folders.length === 0 && (
             <Placeholder
-              message={<Text size={"2"}>There are no folders yet</Text>}
+              message={<Text size={"2"}>There are no collections yet</Text>}
             />
           )}
         </Flex>
