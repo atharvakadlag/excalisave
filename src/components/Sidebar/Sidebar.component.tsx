@@ -149,7 +149,7 @@ export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
                 size="1"
                 className="Placeholder__emptyFolersMessage"
               >
-                Create a folder by clicking on plus icon to organize your
+                Create a collection by clicking on plus icon to organize your
                 drawings
               </Text>
             }
