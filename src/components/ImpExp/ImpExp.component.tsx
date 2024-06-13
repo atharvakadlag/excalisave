@@ -60,7 +60,7 @@ export function ImpExp() {
 
       const file = event.target.files[0];
 
-      XLogger.info(
+      XLogger.debug(
         "File selected: " +
           JSON.stringify({
             fileName: file.name,
