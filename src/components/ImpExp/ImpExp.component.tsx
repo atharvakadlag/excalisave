@@ -60,15 +60,13 @@ export function ImpExp() {
 
       const file = event.target.files[0];
 
-      const isZipFile =
-        file.name.toLocaleLowerCase().endsWith(".zip") &&
-        file.type === "application/zip";
-
-      if (!isZipFile) {
-        XLogger.error("Invalid file type");
-
-        return;
-      }
+      XLogger.debug(
+        "File selected: " +
+          JSON.stringify({
+            fileName: file.name,
+            fileType: file.type,
+          })
+      );
 
       const reader = new FileReader();
       reader.readAsArrayBuffer(file);
