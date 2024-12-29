@@ -10,6 +10,7 @@ type SaveDrawingProps = {
 
 export class DrawingStore {
   static async saveNewDrawing({ name }: SaveDrawingProps) {
+    XLogger.log("Saving new drawing", { name });
     const activeTab = await TabUtils.getActiveTab();
 
     if (!activeTab) {
@@ -152,7 +153,7 @@ export class DrawingStore {
       }
 
       return hasUnsaved;
-    } catch {}
+    } catch { }
 
     // By default, show confirmation dialog, we ensure the action is approved.
     return true;

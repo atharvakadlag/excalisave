@@ -82,6 +82,11 @@ module.exports = {
       "ContentScript",
       "listenDrawingUpdates.ts"
     ),
+    "content-scripts/addOverwriteAction": path.join(
+      sourcePath,
+      "ContentScript",
+      "addOverwriteAction.ts"
+    ),
     popup: path.join(sourcePath, "Popup", "index.tsx"),
     options: path.join(sourcePath, "Options", "index.tsx"),
   },

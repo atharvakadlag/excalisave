@@ -7,6 +7,8 @@ import {
 } from "../constants/message.types";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { XLogger } from "../lib/logger";
+import { TabUtils } from "../lib/utils/tab.utils";
+import { RandomUtils } from "../lib/utils/random.utils";
 
 browser.runtime.onInstalled.addListener(async () => {
   XLogger.log("onInstalled...");
@@ -23,7 +25,7 @@ browser.runtime.onInstalled.addListener(async () => {
 
 browser.runtime.onMessage.addListener(
   async (
-    message: SaveDrawingMessage | SaveNewDrawingMessage | CleanupFilesMessage,
+    message: SaveDrawingMessage | SaveNewDrawingMessage | CleanupFilesMessage | any,
     _sender: any
   ) => {
     try {
@@ -117,6 +119,34 @@ browser.runtime.onMessage.addListener(
           });
 
           break;
+
+        case "MessageAutoSave":
+          const name = message.payload.name;
+          XLogger.log("Saving new drawing", { name });
+          const activeTab = await TabUtils.getActiveTab();
+
+          if (!activeTab) {
+            XLogger.warn("No active tab found");
+            return;
+          }
+
+          const id = `drawing:${RandomUtils.generateRandomId()}`;
+
+          // This workaround is to pass params to script, it's ugly but it works
+          await browser.scripting.executeScript({
+            target: { tabId: activeTab.id },
+            func: (id, name) => {
+              window.__SCRIPT_PARAMS__ = { id, name };
+            },
+            args: [id, name],
+          });
+
+          await browser.scripting.executeScript({
+            target: { tabId: activeTab.id },
+            files: ["./js/execute-scripts/sendDrawingDataToSave.bundle.js"],
+          });
+          break;
+
         default:
           break;
       }

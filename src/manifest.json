@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Excalisave",
-  "version": "2.0",
+  "version": "2.2",
   "short_name": "Excalisave",
   "description": "Save your excalidraw drawings.",
   "icons": {
@@ -76,6 +76,11 @@
         "libs/excalidraw.production.min.js",
         "js/content-scripts/listenDrawingUpdates.bundle.js"
       ]
+    },
+    {
+      "matches": ["https://excalidraw.com/*"],
+      "js": ["js/content-scripts/addOverwriteAction.bundle.js"],
+      "run_at": "document_idle"
     }
   ]
 }
