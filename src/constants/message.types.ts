@@ -7,6 +7,7 @@ export enum MessageType {
   SAVE_NEW_DRAWING = "SAVE_NEW_DRAWING",
   EXPORT_STORE = "EXPORT_STORE",
   CLEANUP_FILES = "CLEANUP_FILES",
+  CLEAR_DRAWING_ID = "ClearDrawingID",
 }
 
 export type SaveNewDrawingMessage = {

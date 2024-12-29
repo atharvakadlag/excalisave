@@ -10,24 +10,21 @@ const addOverwriteAction = () => {
     }
 
     XLogger.info('OverwriteConfirm__Actions found');
-    // create new div from html string
-    // <button
-    //     class="ExcButton ExcButton--color-muted ExcButton--variant-outlined ExcButton--size-large ExcButton--status-undefined ExcButton--fullWidth"
-    //     type="button" aria - label="Save to Excalisave">
-    //     <div class="ExcButton__contents"> Save to Excalisave </div>
-    // </button>
-    // create button from above html
-    const newButton = document.createElement('button');
-    newButton.innerHTML = `
-        <div class="ExcButton__contents"> Save to Excalisave </div>
-    `;
-    // add new class to button
-    newButton.classList.add('ExcButton');
-    newButton.classList.add('ExcButton--color-muted');
-    newButton.classList.add('ExcButton--variant-outlined');
-    newButton.classList.add('ExcButton--size-large');
-    newButton.classList.add('ExcButton--status-undefined');
-    newButton.classList.add('ExcButton--fullWidth');
+    // create a copy for the first div child of overwriteActionsDiv
+    const newAction = overwriteActionsDiv.firstChild.cloneNode(true) as HTMLDivElement;
+    // change the text of the first h4 child inside newAction
+    newAction.querySelector('h4').textContent = 'Excalisave';
+    const innerDiv = newAction.querySelector('div.OverwriteConfirm__Actions__Action__content') as HTMLDivElement;
+    // change the text inside html div inside the button
+    innerDiv.textContent = 'Save the current drawing as an excalisave drawing.';
+    // add overwriteconfirm_excalisave class to innerDiv
+    innerDiv.classList.add('overwriteconfirm_excalisave');
+
+    // get the button inside newAction
+    const newButton = newAction.querySelector('button');
+    // change the text inside html div inside the button
+    newButton.querySelector('div').textContent = 'Save to excalisave.';
+
     // add click event listener
     newButton.addEventListener('click', () => {
         // open extention popup and trigger onclick for save
@@ -39,16 +36,16 @@ const addOverwriteAction = () => {
             type: 'MessageAutoSave',
             payload: {
                 name,
+                setCurrent: false,
             },
         });
-
-        // body > div.excalidraw.excalidraw-modal-container > div > div.Modal__content > div > div > div > div.OverwriteConfirm__Description.OverwriteConfirm__Description--color-danger > button
-        // click on save button
 
         var elem = document.querySelector("body > div.excalidraw.excalidraw-modal-container > div > div.Modal__content > div > div > div > div.OverwriteConfirm__Description.OverwriteConfirm__Description--color-danger > button") as HTMLButtonElement;
         // convert elem into button
         elem.click();
-        XLogger.log('Replace to Excalisave button clicked');
+
+        browser.runtime.sendMessage({ type: 'ClearDrawingID' });
+        XLogger.log('ClearDrawingID message sent');
     });
     const newDiv = document.createElement('div');
     newDiv.innerHTML = `

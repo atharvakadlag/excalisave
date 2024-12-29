@@ -9,6 +9,8 @@ import { IDrawing } from "../interfaces/drawing.interface";
 import { XLogger } from "../lib/logger";
 import { TabUtils } from "../lib/utils/tab.utils";
 import { RandomUtils } from "../lib/utils/random.utils";
+import { DrawingStore } from "../lib/drawing-store";
+import { useCurrentDrawingId } from "../Popup/hooks/useCurrentDrawing.hook";
 
 browser.runtime.onInstalled.addListener(async () => {
   XLogger.log("onInstalled...");
@@ -122,6 +124,7 @@ browser.runtime.onMessage.addListener(
 
         case "MessageAutoSave":
           const name = message.payload.name;
+          const setCurrent = message.payload.setCurrent;
           XLogger.log("Saving new drawing", { name });
           const activeTab = await TabUtils.getActiveTab();
 
@@ -135,10 +138,10 @@ browser.runtime.onMessage.addListener(
           // This workaround is to pass params to script, it's ugly but it works
           await browser.scripting.executeScript({
             target: { tabId: activeTab.id },
-            func: (id, name) => {
-              window.__SCRIPT_PARAMS__ = { id, name };
+            func: (id, name, setCurrent) => {
+              window.__SCRIPT_PARAMS__ = { id, name, setCurrent };
             },
-            args: [id, name],
+            args: [id, name, setCurrent],
           });
 
           await browser.scripting.executeScript({
@@ -146,7 +149,6 @@ browser.runtime.onMessage.addListener(
             files: ["./js/execute-scripts/sendDrawingDataToSave.bundle.js"],
           });
           break;
-
         default:
           break;
       }

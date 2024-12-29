@@ -13,12 +13,15 @@ const { browser } = require("webextension-polyfill-ts");
 type ScriptParams = {
   name: string;
   id: string;
+  setCurrent: boolean;
 };
 
 (async () => {
   const params = getScriptParams<ScriptParams | undefined>();
 
   const saveAsNew = !!params;
+
+  const setCurrent = params?.setCurrent ?? true;
 
   if (saveAsNew && (!params?.id || !params?.name)) {
     throw new Error(
@@ -50,5 +53,5 @@ type ScriptParams = {
     },
   } as SaveDrawingMessage | SaveNewDrawingMessage);
 
-  saveAsNew && localStorage.setItem(DRAWING_ID_KEY_LS, drawingId);
+  setCurrent && saveAsNew && localStorage.setItem(DRAWING_ID_KEY_LS, drawingId);
 })();
