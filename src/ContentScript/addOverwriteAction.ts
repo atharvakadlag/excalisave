@@ -70,3 +70,39 @@ const observer = new MutationObserver((mutations) => {
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
+
+const addButton = () => {
+    const menuContainer = document.querySelector(
+        '.Stack.Stack_vertical.App-menu_top__left'
+    );
+    // Check if button already exists
+    const existingButton = document.querySelector('.excalisave-button');
+
+    if (menuContainer && !existingButton) {
+        // Apply flex styling to menu container
+        menuContainer.setAttribute('style', 'display: flex; gap: 0.75rem;');
+
+        // Create and add Excalisave button
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'top-right-ui';
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'excalidraw-button collab-button excalisave-button'; // Added excalisave-button class
+        button.title = 'Open Excalisave';
+        button.style.position = 'relative';
+        button.style.width = 'auto';
+        button.textContent = 'Excalisave';
+
+        // Add click handler to open popup
+        button.addEventListener('click', () => {
+            browser.runtime.sendMessage({ type: 'OpenPopup' });
+        });
+
+        buttonContainer.appendChild(button);
+        menuContainer.appendChild(buttonContainer);
+    }
+};
+
+// Remove the setTimeout call and just use the load event
+window.addEventListener('load', addButton);
