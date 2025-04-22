@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -11,8 +11,7 @@ import {
   HoverCard,
 } from "@radix-ui/themes";
 import { ArrowLeftIcon, InfoCircledIcon } from "@radix-ui/react-icons";
-import { SyncService } from "../../services/sync.service";
-import { GitHubProvider } from "../../services/github/github-provider";
+import { browser } from "webextension-polyfill-ts";
 
 interface SyncSettingsProps {
   onBack: () => void;
@@ -24,29 +23,96 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
   const [repoName, setRepoName] = useState("");
   const [knownFiles] = useState<string[]>([]);
   const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const loadExistingConfig = async () => {
+      try {
+        setIsLoading(true);
+        const response = await browser.runtime.sendMessage({
+          type: "GET_GITHUB_CONFIG",
+        });
+
+        if (response.success && response.config) {
+          setGithubToken(response.config.token || "");
+          setRepoOwner(response.config.repoOwner || "");
+          setRepoName(response.config.repoName || "");
+        }
+      } catch (error) {
+        setError("Failed to load existing configuration");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadExistingConfig();
+  }, []);
+
+  const handleRemoveSync = async () => {
+    try {
+      setError("");
+      setIsLoading(true);
+
+      const response = await browser.runtime.sendMessage({
+        type: "REMOVE_GITHUB_PROVIDER",
+      });
+
+      if (!response.success) {
+        setError(response.error || "Failed to remove sync configuration");
+        return;
+      }
+
+      // Clear the form
+      setGithubToken("");
+      setRepoOwner("");
+      setRepoName("");
+    } catch (error) {
+      setError("Failed to remove sync configuration");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSaveAndUse = async () => {
     try {
       setError("");
-      const syncService = SyncService.getInstance();
-      const githubProvider = new GitHubProvider();
+      setIsLoading(true);
 
-      // Set the GitHub configuration
-      await githubProvider.saveConfig({
-        token: githubToken,
-        repoOwner: repoOwner,
-        repoName: repoName,
+      const response = await browser.runtime.sendMessage({
+        type: "CONFIGURE_GITHUB_PROVIDER",
+        payload: {
+          token: githubToken,
+          repoOwner: repoOwner,
+          repoName: repoName,
+        },
       });
 
-      // Set the provider and initialize
-      syncService.setProvider(githubProvider);
-      await syncService.initialize();
+      if (!response.success) {
+        setError(response.error || "Failed to initialize GitHub sync");
+        return;
+      }
+
+      // Verify authentication
+      const authResponse = await browser.runtime.sendMessage({
+        type: "CHECK_GITHUB_AUTH",
+      });
+
+      if (!authResponse.success || !authResponse.isAuthenticated) {
+        setError(
+          "Failed to authenticate with GitHub. Please check your token and repository settings."
+        );
+        return;
+      }
+
+      // Success - could show a success message here
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
           : "Failed to initialize GitHub sync"
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -186,6 +252,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       value={githubToken}
                       onChange={(e) => setGithubToken(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </TextField.Root>
                 </Box>
@@ -199,6 +266,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       value={repoOwner}
                       onChange={(e) => setRepoOwner(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </TextField.Root>
                 </Box>
@@ -212,6 +280,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       value={repoName}
                       onChange={(e) => setRepoName(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </TextField.Root>
                 </Box>
@@ -220,12 +289,26 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                     {error}
                   </Text>
                 )}
-                <Button
-                  onClick={handleSaveAndUse}
-                  disabled={!githubToken || !repoOwner || !repoName}
-                >
-                  Save And Use Settings
-                </Button>
+                <Flex gap="3">
+                  <Button
+                    onClick={handleSaveAndUse}
+                    disabled={
+                      !githubToken || !repoOwner || !repoName || isLoading
+                    }
+                  >
+                    {isLoading ? "Saving..." : "Save And Use Settings"}
+                  </Button>
+                  <Button
+                    variant="soft"
+                    color="red"
+                    onClick={handleRemoveSync}
+                    disabled={
+                      (!githubToken && !repoOwner && !repoName) || isLoading
+                    }
+                  >
+                    {isLoading ? "Removing..." : "Remove Sync"}
+                  </Button>
+                </Flex>
               </Flex>
             </Box>
 

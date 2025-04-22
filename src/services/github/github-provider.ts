@@ -23,6 +23,18 @@ export class GitHubProvider implements SyncProvider {
     }
   }
 
+  public async getConfig(): Promise<GitHubConfig | null> {
+    if (!this.config) {
+      await this.loadConfig();
+    }
+    return this.config;
+  }
+
+  public async removeConfig(): Promise<void> {
+    await browser.storage.local.remove("githubConfig");
+    this.config = null;
+  }
+
   public async saveConfig(config: GitHubConfig) {
     await browser.storage.local.set({ githubConfig: config });
     this.config = config;
@@ -37,7 +49,9 @@ export class GitHubProvider implements SyncProvider {
   }
 
   public async isAuthenticated(): Promise<boolean> {
+    XLogger.debug("GitHub provider is authenticated");
     if (!this.config) return false;
+    XLogger.debug("GitHub with config");
 
     try {
       const response = await fetch(
@@ -57,6 +71,24 @@ export class GitHubProvider implements SyncProvider {
     }
   }
 
+  /**
+   * Utility function to encode Unicode strings as base64
+   * This handles characters outside the Latin1 range that btoa() can't handle
+   */
+  private encodeBase64(str: string): string {
+    // Convert the string to a Uint8Array using TextEncoder
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+
+    // Convert the Uint8Array to a base64 string
+    let binary = "";
+    for (let i = 0; i < data.length; i++) {
+      binary += String.fromCharCode(data[i]);
+    }
+
+    return btoa(binary);
+  }
+
   public async saveDrawing(drawing: IDrawing): Promise<boolean> {
     if (!this.config) return false;
 
@@ -71,7 +103,7 @@ export class GitHubProvider implements SyncProvider {
           },
           body: JSON.stringify({
             message: `Save drawing ${drawing.id}`,
-            content: btoa(JSON.stringify(drawing)),
+            content: this.encodeBase64(JSON.stringify(drawing)),
           }),
         }
       );
@@ -113,7 +145,7 @@ export class GitHubProvider implements SyncProvider {
           },
           body: JSON.stringify({
             message: `Update drawing ${drawing.id}`,
-            content: btoa(JSON.stringify(drawing)),
+            content: this.encodeBase64(JSON.stringify(drawing)),
             sha: currentFileData.sha,
           }),
         }
