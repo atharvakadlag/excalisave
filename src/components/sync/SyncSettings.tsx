@@ -62,7 +62,6 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
         return;
       }
 
-      // Clear the form
       setGithubToken("");
       setRepoOwner("");
       setRepoName("");
@@ -92,11 +91,9 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
         return;
       }
 
-      // Verify authentication
       const authResponse = await browser.runtime.sendMessage({
         type: "CHECK_GITHUB_AUTH",
       });
-
       if (!authResponse.success || !authResponse.isAuthenticated) {
         setError(
           "Failed to authenticate with GitHub. Please check your token and repository settings."
