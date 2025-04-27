@@ -8,6 +8,7 @@ export enum MessageType {
   EXPORT_STORE = "EXPORT_STORE",
   CLEANUP_FILES = "CLEANUP_FILES",
   CLEAR_DRAWING_ID = "ClearDrawingID",
+  DELETE_DRAWING = "DELETE_DRAWING",
 }
 
 export type SaveNewDrawingMessage = {
@@ -50,5 +51,12 @@ export type CleanupFilesMessage = {
   payload: {
     tabId: number;
     executionTimestamp: number;
+  };
+};
+
+export type DeleteDrawingMessage = {
+  type: MessageType.DELETE_DRAWING;
+  payload: {
+    id: string;
   };
 };

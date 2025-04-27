@@ -34,15 +34,6 @@ export class SyncService {
     return (await this.provider?.isAuthenticated()) || false;
   }
 
-  public async saveDrawing(drawing: IDrawing): Promise<void> {
-    if (!this.provider) return;
-    if (!(await this.isAuthenticated())) return;
-    if (!(await this.isDrawingInSyncFolder(drawing.id))) return;
-
-    await this.provider.saveDrawing(drawing);
-    XLogger.log("New drawing saved in cloud successfully");
-  }
-
   public async updateDrawing(drawing: IDrawing): Promise<void> {
     if (!this.provider) return;
     if (!(await this.isAuthenticated())) return;
@@ -82,12 +73,11 @@ export class SyncService {
     await browser.storage.local.set({ folders: newFolders });
   }
 
-  public async deleteDrawing(drawingName: string): Promise<void> {
+  public async deleteDrawing(drawing: IDrawing): Promise<void> {
     if (!this.provider) return;
     if (!(await this.isAuthenticated())) return;
-    if (!(await this.isDrawingInSyncFolder(drawingName))) return;
 
-    await this.provider.deleteDrawing(drawingName);
+    await this.provider.deleteDrawing(drawing);
   }
 
   public async syncFiles(): Promise<void> {

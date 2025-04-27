@@ -1,6 +1,7 @@
 import { browser } from "webextension-polyfill-ts";
 import {
   CleanupFilesMessage,
+  DeleteDrawingMessage,
   MessageType,
   SaveDrawingMessage,
   SaveNewDrawingMessage,
@@ -35,6 +36,7 @@ browser.runtime.onMessage.addListener(
       | SaveDrawingMessage
       | SaveNewDrawingMessage
       | CleanupFilesMessage
+      | DeleteDrawingMessage
       | any,
     _sender: any
   ) => {
@@ -96,6 +98,18 @@ browser.runtime.onMessage.addListener(
           await syncService.updateDrawing(newData);
           return { success: true };
 
+        case MessageType.DELETE_DRAWING:
+          XLogger.info("Deleting drawing", message.payload.id);
+
+          const drawingToDelete = (
+            await browser.storage.local.get(message.payload.id)
+          )[message.payload.id] as IDrawing;
+
+          if (!drawingToDelete) return { success: true };
+
+          await syncService.deleteDrawing(drawingToDelete);
+          return { success: true };
+
         case MessageType.CLEANUP_FILES:
           XLogger.info("Cleaning up files");
 
@@ -145,7 +159,8 @@ browser.runtime.onMessage.addListener(
             return { success: false, error: "No active tab found" };
           }
 
-          // doing this kind of breaks the auto syncing, but it will have to do
+          // doing this kind of breaks the auto syncing.
+          // There should be a proper check to see if the file already exist as a stored file
           const id = `drawing:${RandomUtils.generateRandomId()}`;
 
           // This workaround is to pass params to script, it's ugly, but it works

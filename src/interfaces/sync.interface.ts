@@ -13,24 +13,17 @@ export interface SyncProvider {
   isAuthenticated(): Promise<boolean>;
 
   /**
-   * Save a drawing to the cloud
-   * @param drawing full IDrawing Object to save to the provider
-   * @return Promise<boolean>
-   */
-  saveDrawing(drawing: IDrawing): Promise<boolean>;
-
-  /**
-   * Update an existing drawing to the provider
+   * Update an existing drawing to the provider. If file does not exist it should create it.
    * @return Promise<boolean>
    */
   updateDrawing(drawing: IDrawing): Promise<boolean>;
 
   /**
    * Delete a drawing from the cloud by the name
-   * @param drawingName the name of the drawing as it is stored by the provider
+   * @param drawing the full IDrawing
    * @return Promise<boolean>
    */
-  deleteDrawing(drawingName: string): Promise<boolean>;
+  deleteDrawing(drawing: IDrawing): Promise<boolean>;
 
   /**
    * get all files from the cloud

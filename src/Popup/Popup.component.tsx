@@ -35,7 +35,11 @@ import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 import { useFolders } from "./hooks/useFolders.hook";
 import "./Popup.styles.scss";
-import { CleanupFilesMessage, MessageType } from "../constants/message.types";
+import {
+  CleanupFilesMessage,
+  DeleteDrawingMessage,
+  MessageType,
+} from "../constants/message.types";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -197,14 +201,23 @@ const Popup: React.FC = () => {
 
   const onDeleteDrawing = async (id: string) => {
     try {
-      const newDrawing = drawings.filter((drawing) => drawing.id !== id);
+      // First, try to delete from sync service
+      await browser.runtime.sendMessage({
+        type: MessageType.DELETE_DRAWING,
+        payload: {
+          id,
+        },
+      } as DeleteDrawingMessage);
 
+      // Then update the UI and remove from local storage
+      const newDrawing = drawings.filter((drawing) => drawing.id !== id);
       setDrawings(newDrawing);
 
       if (currentDrawingId === id) {
         setCurrentDrawingId(undefined);
       }
 
+      // Finally, remove from folders and local storage
       await Promise.allSettled([
         removeDrawingFromAllFolders(id),
         DrawingStore.deleteDrawing(id),

@@ -2,7 +2,6 @@ import { SyncProvider } from "../../interfaces/sync.interface";
 import { IDrawing } from "../../interfaces/drawing.interface";
 import { browser } from "webextension-polyfill-ts";
 import { XLogger } from "../../lib/logger";
-import { SyncService } from "../sync.service";
 
 interface GitHubConfig {
   token: string;
@@ -30,11 +29,9 @@ function encodeBase64(str: string): string {
 
 export class GitHubProvider implements SyncProvider {
   private config: GitHubConfig | null = null;
-  private syncService: SyncService;
 
   constructor() {
     this.loadConfig();
-    this.syncService = SyncService.getInstance();
   }
 
   private async loadConfig() {
@@ -161,13 +158,13 @@ export class GitHubProvider implements SyncProvider {
     }
   }
 
-  public async deleteDrawing(drawingName: string): Promise<boolean> {
+  public async deleteDrawing(drawing: IDrawing): Promise<boolean> {
     if (!this.config) return false;
 
     try {
       // First get the current file to get its SHA
       const currentFile = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawingName}.json`,
+        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawing.id}.json`,
         {
           headers: {
             Authorization: `token ${this.config.token}`,
@@ -182,7 +179,7 @@ export class GitHubProvider implements SyncProvider {
       const currentFileData = await currentFile.json();
 
       const response = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawingName}.json`,
+        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawing.id}.json`,
         {
           method: "DELETE",
           headers: {
@@ -190,7 +187,7 @@ export class GitHubProvider implements SyncProvider {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: `Delete drawing ${drawingName}`,
+            message: `Delete drawing ${drawing.id}`,
             sha: currentFileData.sha,
           }),
         }
