@@ -1,4 +1,7 @@
-import { SyncProvider } from "../../interfaces/sync.interface";
+import {
+  SyncProvider,
+  ChangeHistoryItem,
+} from "../../interfaces/sync.interface";
 import { IDrawing } from "../../interfaces/drawing.interface";
 import { browser } from "webextension-polyfill-ts";
 import { XLogger } from "../../lib/logger";
@@ -263,6 +266,44 @@ export class GitHubProvider implements SyncProvider {
       return drawings;
     } catch (error) {
       XLogger.error("Failed to fetch drawings from GitHub", error);
+      return [];
+    }
+  }
+
+  public async getChangeHistory(limit?: number): Promise<ChangeHistoryItem[]> {
+    if (!this.config) return [];
+
+    try {
+      const response = await fetch(
+        `https://api.github.com/repos/${this.config.repoOwner}/${
+          this.config.repoName
+        }/commits?per_page=${limit || 10}`,
+        {
+          headers: {
+            Authorization: `token ${this.config.token}`,
+            Accept: "application/vnd.github.v3+json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        XLogger.error("Failed to fetch commit history", response.status);
+        return [];
+      }
+
+      const commits = await response.json();
+
+      // Transform GitHub commits to our ChangeHistoryItem format
+      return commits.map((commit: any) => ({
+        id: commit.sha,
+        message: commit.commit.message,
+        author: {
+          name: commit.commit.author.name,
+          date: commit.commit.author.date,
+        },
+      }));
+    } catch (error) {
+      XLogger.error("Failed to fetch commit history", error);
       return [];
     }
   }

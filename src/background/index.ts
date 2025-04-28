@@ -2,6 +2,7 @@ import { browser } from "webextension-polyfill-ts";
 import {
   CleanupFilesMessage,
   DeleteDrawingMessage,
+  GetChangeHistoryMessage,
   MessageType,
   SaveDrawingMessage,
   SaveNewDrawingMessage,
@@ -37,6 +38,7 @@ browser.runtime.onMessage.addListener(
       | SaveNewDrawingMessage
       | CleanupFilesMessage
       | DeleteDrawingMessage
+      | GetChangeHistoryMessage
       | any,
     _sender: any
   ) => {
@@ -196,6 +198,18 @@ browser.runtime.onMessage.addListener(
 
         case "CHECK_GITHUB_AUTH":
           return await githubConfigService.checkGitHubAuth();
+
+        case MessageType.GET_CHANGE_HISTORY:
+          XLogger.info("Getting commit history");
+
+          // Get change history from sync service
+          const limit = message.payload?.limit || 10;
+          const changeHistory = await syncService.getChangeHistory(limit);
+
+          return {
+            success: true,
+            commits: changeHistory,
+          };
 
         default:
           return { success: false, error: "Unknown message type" };

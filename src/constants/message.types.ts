@@ -9,6 +9,7 @@ export enum MessageType {
   CLEANUP_FILES = "CLEANUP_FILES",
   CLEAR_DRAWING_ID = "ClearDrawingID",
   DELETE_DRAWING = "DELETE_DRAWING",
+  GET_CHANGE_HISTORY = "GET_CHANGE_HISTORY",
 }
 
 export type SaveNewDrawingMessage = {
@@ -58,5 +59,12 @@ export type DeleteDrawingMessage = {
   type: MessageType.DELETE_DRAWING;
   payload: {
     id: string;
+  };
+};
+
+export type GetChangeHistoryMessage = {
+  type: MessageType.GET_CHANGE_HISTORY;
+  payload: {
+    limit?: number;
   };
 };

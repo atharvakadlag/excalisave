@@ -1,5 +1,5 @@
 import { browser } from "webextension-polyfill-ts";
-import { SyncProvider } from "../interfaces/sync.interface";
+import { SyncProvider, ChangeHistoryItem } from "../interfaces/sync.interface";
 import { XLogger } from "../lib/logger";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { Folder } from "../interfaces/folder.interface";
@@ -78,6 +78,18 @@ export class SyncService {
     if (!(await this.isAuthenticated())) return;
 
     await this.provider.deleteDrawing(drawing);
+  }
+
+  /**
+   * Get the change history from the provider
+   * @param limit Maximum number of history items to return
+   * @return Promise<ChangeHistoryItem[]>
+   */
+  public async getChangeHistory(limit?: number): Promise<ChangeHistoryItem[]> {
+    if (!this.provider) return [];
+    if (!(await this.isAuthenticated())) return [];
+
+    return await this.provider.getChangeHistory(limit);
   }
 
   public async syncFiles(): Promise<void> {

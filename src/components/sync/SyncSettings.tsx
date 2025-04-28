@@ -9,9 +9,16 @@ import {
   TextField,
   Theme,
   HoverCard,
+  Table,
+  ScrollArea,
 } from "@radix-ui/themes";
 import { ArrowLeftIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 import { browser } from "webextension-polyfill-ts";
+import {
+  MessageType,
+  GetChangeHistoryMessage,
+} from "../../constants/message.types";
+import { ChangeHistoryItem } from "../../interfaces/sync.interface";
 
 interface SyncSettingsProps {
   onBack: () => void;
@@ -21,9 +28,11 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
   const [githubToken, setGithubToken] = useState("");
   const [repoOwner, setRepoOwner] = useState("");
   const [repoName, setRepoName] = useState("");
-  const [knownFiles] = useState<string[]>([]);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [commits, setCommits] = useState<ChangeHistoryItem[]>([]);
+  const [isLoadingCommits, setIsLoadingCommits] = useState(false);
+  const [commitError, setCommitError] = useState<string>("");
 
   useEffect(() => {
     const loadExistingConfig = async () => {
@@ -48,6 +57,37 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
     loadExistingConfig();
   }, []);
 
+  useEffect(() => {
+    // Load commit history when GitHub is configured
+    if (githubToken && repoOwner && repoName) {
+      loadCommitHistory();
+    }
+  }, [githubToken, repoOwner, repoName]);
+
+  const loadCommitHistory = async () => {
+    try {
+      setIsLoadingCommits(true);
+      setCommitError("");
+
+      const response = await browser.runtime.sendMessage({
+        type: MessageType.GET_CHANGE_HISTORY,
+        payload: {
+          limit: 40,
+        },
+      } as GetChangeHistoryMessage);
+
+      if (response.success && response.commits) {
+        setCommits(response.commits);
+      } else {
+        setCommitError(response.error || "Failed to load commit history");
+      }
+    } catch (error) {
+      setCommitError("Failed to load commit history");
+    } finally {
+      setIsLoadingCommits(false);
+    }
+  };
+
   const handleRemoveSync = async () => {
     try {
       setError("");
@@ -65,6 +105,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       setGithubToken("");
       setRepoOwner("");
       setRepoName("");
+      setCommits([]);
     } catch (error) {
       setError("Failed to remove sync configuration");
     } finally {
@@ -101,7 +142,8 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
         return;
       }
 
-      // Success - could show a success message here
+      // Load commit history after successful configuration
+      loadCommitHistory();
     } catch (error) {
       setError(
         error instanceof Error
@@ -111,6 +153,11 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
   };
 
   return (
@@ -311,36 +358,63 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
 
             <Box>
               <Heading as="h3" size="5" style={{ paddingBottom: "10px" }}>
-                Known Files
+                Commit History
               </Heading>
               <Text
                 size="2"
                 as="p"
                 style={{ lineHeight: 1.1, marginBottom: "16px" }}
               >
-                Files that are currently synced with GitHub.
+                Recent commits to your GitHub repository.
               </Text>
-              <Box
-                style={{
-                  background: "var(--gray-a3)",
-                  borderRadius: "var(--radius-3)",
-                  padding: "16px",
-                }}
-              >
-                {knownFiles.length === 0 ? (
-                  <Text size="2" color="gray">
-                    No files synced yet
-                  </Text>
-                ) : (
-                  <Flex direction="column" gap="2">
-                    {knownFiles.map((file, index) => (
-                      <Text key={index} size="2">
-                        {file}
-                      </Text>
-                    ))}
-                  </Flex>
-                )}
-              </Box>
+
+              {isLoadingCommits ? (
+                <Text size="2">Loading commit history...</Text>
+              ) : commitError ? (
+                <Text size="2" color="red">
+                  {commitError}
+                </Text>
+              ) : commits.length === 0 ? (
+                <Text size="2" color="gray">
+                  No commits found. Make sure your GitHub configuration is
+                  correct.
+                </Text>
+              ) : (
+                <Box
+                  style={{
+                    background: "var(--gray-a3)",
+                    borderRadius: "var(--radius-3)",
+                    padding: "16px",
+                  }}
+                >
+                  <ScrollArea style={{ height: "300px" }}>
+                    <Table.Root>
+                      <Table.Header>
+                        <Table.Row>
+                          <Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
+                          <Table.ColumnHeaderCell>
+                            Author
+                          </Table.ColumnHeaderCell>
+                          <Table.ColumnHeaderCell>
+                            Message
+                          </Table.ColumnHeaderCell>
+                        </Table.Row>
+                      </Table.Header>
+                      <Table.Body>
+                        {commits.map((commit) => (
+                          <Table.Row key={commit.id}>
+                            <Table.Cell>
+                              {formatDate(commit.author.date)}
+                            </Table.Cell>
+                            <Table.Cell>{commit.author.name}</Table.Cell>
+                            <Table.Cell>{commit.message}</Table.Cell>
+                          </Table.Row>
+                        ))}
+                      </Table.Body>
+                    </Table.Root>
+                  </ScrollArea>
+                </Box>
+              )}
             </Box>
           </Box>
         </Container>

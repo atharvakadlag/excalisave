@@ -1,5 +1,14 @@
 import { IDrawing } from "./drawing.interface";
 
+export interface ChangeHistoryItem {
+  id: string;
+  message: string;
+  author: {
+    name: string;
+    date: string;
+  };
+}
+
 export interface SyncProvider {
   /**
    * Initialize the sync provider, syncs files and pushes files to the provider
@@ -30,4 +39,11 @@ export interface SyncProvider {
    * @return Promise<IDrawing[]>
    */
   getAllFiles(): Promise<IDrawing[]>;
+
+  /**
+   * Get the change history from the provider
+   * @param limit Maximum number of history items to return
+   * @return Promise<ChangeHistoryItem[]>
+   */
+  getChangeHistory(limit?: number): Promise<ChangeHistoryItem[]>;
 }
