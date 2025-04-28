@@ -1,5 +1,6 @@
 import { BinaryFileData } from "@excalidraw/excalidraw/types/types";
 import { DrawingDataState } from "../interfaces/drawing-data-state.interface";
+import { IDrawing } from "../interfaces/drawing.interface";
 
 export enum MessageType {
   // For background:
@@ -10,6 +11,7 @@ export enum MessageType {
   CLEAR_DRAWING_ID = "ClearDrawingID",
   DELETE_DRAWING = "DELETE_DRAWING",
   GET_CHANGE_HISTORY = "GET_CHANGE_HISTORY",
+  SHOW_MERGE_CONFLICT = "SHOW_MERGE_CONFLICT",
 }
 
 export type SaveNewDrawingMessage = {
@@ -66,5 +68,14 @@ export type GetChangeHistoryMessage = {
   type: MessageType.GET_CHANGE_HISTORY;
   payload: {
     limit?: number;
+  };
+};
+
+export type ShowMergeConflictMessage = {
+  type: MessageType.SHOW_MERGE_CONFLICT;
+  payload: {
+    drawingId: string;
+    localDrawing: IDrawing;
+    remoteDrawing: IDrawing;
   };
 };

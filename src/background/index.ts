@@ -64,8 +64,8 @@ browser.runtime.onMessage.addListener(
           };
 
           await browser.storage.local.set({ [message.payload.id]: drawing });
-          await syncService.updateDrawing(drawing);
-          return { success: true };
+          const saveResult = await syncService.updateDrawing(drawing);
+          return { success: saveResult.success };
 
         case MessageType.SAVE_DRAWING:
           const exitentDrawing = (
@@ -97,8 +97,8 @@ browser.runtime.onMessage.addListener(
             [message.payload.id]: newData,
           });
 
-          await syncService.updateDrawing(newData);
-          return { success: true };
+          const updateResult = await syncService.updateDrawing(newData);
+          return { success: updateResult.success };
 
         case MessageType.DELETE_DRAWING:
           XLogger.info("Deleting drawing", message.payload.id);

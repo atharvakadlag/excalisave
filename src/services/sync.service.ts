@@ -3,6 +3,10 @@ import { SyncProvider, ChangeHistoryItem } from "../interfaces/sync.interface";
 import { XLogger } from "../lib/logger";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { Folder } from "../interfaces/folder.interface";
+import {
+  MessageType,
+  ShowMergeConflictMessage,
+} from "../constants/message.types";
 
 export class SyncService {
   private static instance: SyncService;
@@ -34,17 +38,56 @@ export class SyncService {
     return (await this.provider?.isAuthenticated()) || false;
   }
 
-  public async updateDrawing(drawing: IDrawing): Promise<void> {
-    if (!this.provider) return;
-    if (!(await this.isAuthenticated())) return;
-    if (!(await this.isDrawingInSyncFolder(drawing.id))) return;
+  /**
+   * Update a drawing in the sync provider
+   * Handles conflict detection and resolution
+   * @param drawing The drawing to update
+   * @returns Object indicating success status
+   */
+  public async updateDrawing(drawing: IDrawing): Promise<{ success: boolean }> {
+    // Early returns for invalid states
+    if (!this.provider) return { success: false };
+    if (!(await this.isAuthenticated())) return { success: false };
+    if (!(await this.isDrawingInSyncFolder(drawing.id)))
+      return { success: false };
 
-    await this.provider.updateDrawing(drawing);
-    XLogger.log("Drawing updated in cloud successfully");
+    // Attempt to update the drawing in the provider
+    const result = await this.provider.updateDrawing(drawing);
+
+    // Handle boolean result (success/failure)
+    if (typeof result === "boolean") {
+      if (result) {
+        XLogger.log("Drawing updated in cloud successfully");
+        return { success: true };
+      } else {
+        XLogger.error("Failed to update drawing in cloud");
+        return { success: false };
+      }
+    }
+    // Handle conflict detection
+    else if (result.conflict) {
+      XLogger.warn("Merge conflict detected when updating drawing", drawing.id);
+
+      // Send a message to the popup to show the conflict dialog
+      browser.runtime.sendMessage({
+        type: MessageType.SHOW_MERGE_CONFLICT,
+        payload: {
+          drawingId: drawing.id,
+          localDrawing: result.localDrawing,
+          remoteDrawing: result.remoteDrawing,
+        },
+      } as ShowMergeConflictMessage);
+
+      return { success: false };
+    }
+
+    return { success: false };
   }
 
   /**
    * Check if a drawing is in the sync folder
+   * @param drawingId The ID of the drawing to check
+   * @returns Promise<boolean> indicating if the drawing is in the sync folder
    */
   private async isDrawingInSyncFolder(drawingId: string): Promise<boolean> {
     const folders = await browser.storage.local.get("folders");
@@ -56,6 +99,10 @@ export class SyncService {
     return syncFolder.drawingIds.includes(drawingId);
   }
 
+  /**
+   * Ensure the sync folder exists in the local storage
+   * Creates it if it doesn't exist
+   */
   private async ensureSyncFolderExists(): Promise<void> {
     const folders = await browser.storage.local.get("folders");
     const syncFolder = folders.folders?.find(
@@ -73,6 +120,10 @@ export class SyncService {
     await browser.storage.local.set({ folders: newFolders });
   }
 
+  /**
+   * Delete a drawing from the sync provider
+   * @param drawing The drawing to delete
+   */
   public async deleteDrawing(drawing: IDrawing): Promise<void> {
     if (!this.provider) return;
     if (!(await this.isAuthenticated())) return;
@@ -92,6 +143,10 @@ export class SyncService {
     return await this.provider.getChangeHistory(limit);
   }
 
+  /**
+   * Sync files from the provider to local storage
+   * Updates the sync folder with the latest drawings
+   */
   public async syncFiles(): Promise<void> {
     if (!this.provider) return;
     if (!(await this.isAuthenticated())) return;

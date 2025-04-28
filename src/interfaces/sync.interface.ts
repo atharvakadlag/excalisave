@@ -23,9 +23,14 @@ export interface SyncProvider {
 
   /**
    * Update an existing drawing to the provider. If file does not exist it should create it.
-   * @return Promise<boolean>
+   * @return Promise<boolean> or Promise<{ conflict: boolean, localDrawing: IDrawing, remoteDrawing: IDrawing }> if there's a conflict
    */
-  updateDrawing(drawing: IDrawing): Promise<boolean>;
+  updateDrawing(
+    drawing: IDrawing
+  ): Promise<
+    | boolean
+    | { conflict: boolean; localDrawing: IDrawing; remoteDrawing: IDrawing }
+  >;
 
   /**
    * Delete a drawing from the cloud by the name

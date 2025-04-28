@@ -40,6 +40,8 @@ import {
   DeleteDrawingMessage,
   MessageType,
 } from "../constants/message.types";
+import { MergeConflictDialog } from "../components/MergeConflict/MergeConflict.component";
+import { SyncService } from "../services/sync.service";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -71,6 +73,13 @@ const Popup: React.FC = () => {
   const { loading, startLoading } = useDrawingLoading();
   const [isConfirmSwitchDialogOpen, setIsConfirmSwitchDialogOpen] =
     useState<boolean>(false);
+  const [mergeConflict, setMergeConflict] = useState<{
+    isOpen: boolean;
+    drawingId: string;
+    localDrawing: IDrawing;
+    remoteDrawing: IDrawing;
+  } | null>(null);
+  const syncService = SyncService.getInstance();
 
   useEffect(() => {
     getRestorePoint()
@@ -161,8 +170,23 @@ const Popup: React.FC = () => {
         }
       });
 
+    // Listen for merge conflict messages
+    const handleMergeConflict = (message: any) => {
+      if (message.type === MessageType.SHOW_MERGE_CONFLICT) {
+        setMergeConflict({
+          isOpen: true,
+          drawingId: message.payload.drawingId,
+          localDrawing: message.payload.localDrawing,
+          remoteDrawing: message.payload.remoteDrawing,
+        });
+      }
+    };
+
+    browser.runtime.onMessage.addListener(handleMergeConflict);
+
     return () => {
       browser.storage.onChanged.removeListener(onDrawingChanged);
+      browser.runtime.onMessage.removeListener(handleMergeConflict);
     };
   }, []);
 
@@ -350,6 +374,41 @@ const Popup: React.FC = () => {
         ))}
       </Grid>
     );
+  };
+
+  /**
+   * Handle the resolution of a merge conflict
+   * Updates local storage and UI with the chosen version
+   * @param useLocal Whether to use the local version (true) or remote version (false)
+   */
+  const handleResolveConflict = async (useLocal: boolean) => {
+    if (!mergeConflict) return;
+
+    // Select the appropriate drawing based on user choice
+    const drawingToUse = useLocal
+      ? mergeConflict.localDrawing
+      : mergeConflict.remoteDrawing;
+
+    // Update local storage with the chosen version
+    await browser.storage.local.set({
+      [mergeConflict.drawingId]: drawingToUse,
+    });
+
+    // Update the UI to reflect the changes
+    setDrawings(
+      drawings.map((drawing) =>
+        drawing.id === mergeConflict.drawingId ? drawingToUse : drawing
+      )
+    );
+
+    // Try to save to GitHub again
+    const result = await syncService.updateDrawing(drawingToUse);
+
+    if (!result.success) {
+      XLogger.error("Failed to save drawing after conflict resolution");
+    }
+
+    setMergeConflict(null);
   };
 
   return (
@@ -550,6 +609,21 @@ const Popup: React.FC = () => {
             </Flex>
           </Dialog.Content>
         </Dialog.Root>
+
+        {/* Merge Conflict Dialog */}
+        {mergeConflict && (
+          <MergeConflictDialog
+            isOpen={mergeConflict.isOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                setMergeConflict(null);
+              }
+            }}
+            localDrawing={mergeConflict.localDrawing}
+            remoteDrawing={mergeConflict.remoteDrawing}
+            onResolve={handleResolveConflict}
+          />
+        )}
       </section>
     </Theme>
   );

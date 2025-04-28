@@ -118,7 +118,12 @@ export class GitHubProvider implements SyncProvider {
     }
   }
 
-  public async updateDrawing(drawing: IDrawing): Promise<boolean> {
+  public async updateDrawing(
+    drawing: IDrawing
+  ): Promise<
+    | boolean
+    | { conflict: boolean; localDrawing: IDrawing; remoteDrawing: IDrawing }
+  > {
     if (!this.config) return false;
 
     try {
@@ -153,6 +158,30 @@ export class GitHubProvider implements SyncProvider {
           }),
         }
       );
+
+      // Check for 409 Conflict error
+      if (response.status === 409) {
+        // Get the remote drawing data
+        const remoteDrawingResponse = await fetch(
+          `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawing.id}.json`,
+          {
+            headers: {
+              Authorization: `token ${this.config.token}`,
+            },
+          }
+        );
+
+        if (remoteDrawingResponse.ok) {
+          const remoteData = await remoteDrawingResponse.json();
+          const remoteContent = JSON.parse(atob(remoteData.content));
+
+          return {
+            conflict: true,
+            localDrawing: drawing,
+            remoteDrawing: remoteContent,
+          };
+        }
+      }
 
       return response.ok;
     } catch (error) {
