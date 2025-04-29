@@ -199,6 +199,7 @@ const Popup: React.FC = () => {
 
   const onRenameDrawing = async (id: string, newName: string) => {
     try {
+      // Update the UI
       const newDrawing = drawings.map((drawing) => {
         if (drawing.id === id) {
           return {
@@ -212,10 +213,19 @@ const Popup: React.FC = () => {
 
       setDrawings(newDrawing);
 
+      // Update local storage
       await browser.storage.local.set({
         [id]: {
           ...drawings.find((drawing) => drawing.id === id),
           name: newName,
+        },
+      });
+
+      // Sync the drawing to the cloud
+      await browser.runtime.sendMessage({
+        type: MessageType.SYNC_DRAWING,
+        payload: {
+          id,
         },
       });
     } catch (error) {

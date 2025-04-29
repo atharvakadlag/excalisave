@@ -12,6 +12,7 @@ export enum MessageType {
   DELETE_DRAWING = "DELETE_DRAWING",
   GET_CHANGE_HISTORY = "GET_CHANGE_HISTORY",
   SHOW_MERGE_CONFLICT = "SHOW_MERGE_CONFLICT",
+  SYNC_DRAWING = "SYNC_DRAWING",
 }
 
 export type SaveNewDrawingMessage = {
@@ -77,5 +78,12 @@ export type ShowMergeConflictMessage = {
     drawingId: string;
     localDrawing: IDrawing;
     remoteDrawing: IDrawing;
+  };
+};
+
+export type SyncDrawingMessage = {
+  type: MessageType.SYNC_DRAWING;
+  payload: {
+    id: string;
   };
 };

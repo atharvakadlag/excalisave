@@ -100,6 +100,19 @@ browser.runtime.onMessage.addListener(
           const updateResult = await syncService.updateDrawing(newData);
           return { success: updateResult.success };
 
+        case MessageType.SYNC_DRAWING:
+          const drawingToSync = (
+            await browser.storage.local.get(message.payload.id)
+          )[message.payload.id] as IDrawing;
+
+          if (!drawingToSync) {
+            XLogger.error("No drawing found with id", message.payload.id);
+            return { success: false, error: "No drawing found with id" };
+          }
+
+          const syncResult = await syncService.updateDrawing(drawingToSync);
+          return { success: syncResult.success };
+
         case MessageType.DELETE_DRAWING:
           XLogger.info("Deleting drawing", message.payload.id);
 
@@ -181,7 +194,6 @@ browser.runtime.onMessage.addListener(
 
           return { success: true };
 
-        // Add new message types for GitHub provider configuration
         case "CONFIGURE_GITHUB_PROVIDER":
           const { token, repoOwner, repoName } = message.payload;
           return await githubConfigService.configureGitHubProvider(
@@ -200,11 +212,9 @@ browser.runtime.onMessage.addListener(
           return await githubConfigService.checkGitHubAuth();
 
         case MessageType.GET_CHANGE_HISTORY:
-          XLogger.info("Getting commit history");
-
-          // Get change history from sync service
-          const limit = message.payload?.limit || 10;
-          const changeHistory = await syncService.getChangeHistory(limit);
+          const changeHistory = await syncService.getChangeHistory(
+            message.payload?.limit
+          );
 
           return {
             success: true,
