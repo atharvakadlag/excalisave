@@ -273,6 +273,7 @@ export class GitHubProvider implements SyncProvider {
               const drawing: IDrawing = {
                 id: file.name.replace(".json", ""),
                 name: rawData.name || file.name.replace(".json", ""),
+                sync: rawData.sync,
                 createdAt: rawData.createdAt || new Date().toISOString(),
                 imageBase64: rawData.imageBase64,
                 viewBackgroundColor: rawData.viewBackgroundColor,

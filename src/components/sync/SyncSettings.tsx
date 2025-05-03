@@ -11,14 +11,17 @@ import {
   HoverCard,
   Table,
   ScrollArea,
+  Checkbox,
 } from "@radix-ui/themes";
 import { ArrowLeftIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 import { browser } from "webextension-polyfill-ts";
 import {
   MessageType,
   GetChangeHistoryMessage,
+  ConfigureGithubProviderMessage,
 } from "../../constants/message.types";
 import { ChangeHistoryItem } from "../../interfaces/sync.interface";
+import { IDrawing } from "../../interfaces/drawing.interface";
 
 interface SyncSettingsProps {
   onBack: () => void;
@@ -33,6 +36,8 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
   const [commits, setCommits] = useState<ChangeHistoryItem[]>([]);
   const [isLoadingCommits, setIsLoadingCommits] = useState(false);
   const [commitError, setCommitError] = useState<string>("");
+  const [drawings, setDrawings] = useState<IDrawing[]>([]);
+  const [selectedDrawings, setSelectedDrawings] = useState<string[]>([]);
 
   useEffect(() => {
     const loadExistingConfig = async () => {
@@ -46,6 +51,18 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
           setGithubToken(response.config.token || "");
           setRepoOwner(response.config.repoOwner || "");
           setRepoName(response.config.repoName || "");
+        }
+
+        // Load drawings
+        const storage = await browser.storage.local.get();
+        const drawings: IDrawing[] = Object.values(storage).filter(
+          (o) => o?.id?.startsWith?.("drawing:")
+        );
+
+        if (drawings) {
+          setDrawings(drawings);
+          // Select all drawings by default
+          setSelectedDrawings(drawings.map((d: IDrawing) => d.id));
         }
       } catch (error) {
         setError("Failed to load existing configuration");
@@ -124,8 +141,9 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
           token: githubToken,
           repoOwner: repoOwner,
           repoName: repoName,
+          drawingsToSync: selectedDrawings,
         },
-      });
+      } as ConfigureGithubProviderMessage);
 
       if (!response.success) {
         setError(response.error || "Failed to initialize GitHub sync");
@@ -152,6 +170,25 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedDrawings(drawings.map((d: IDrawing) => d.id));
+    } else {
+      setSelectedDrawings([]);
+    }
+  };
+
+  const handleSelectDrawing = (
+    drawingId: string,
+    checked: boolean | string
+  ) => {
+    if (checked === true) {
+      setSelectedDrawings([...selectedDrawings, drawingId]);
+    } else {
+      setSelectedDrawings(selectedDrawings.filter((id) => id !== drawingId));
     }
   };
 
@@ -354,6 +391,62 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                   </Button>
                 </Flex>
               </Flex>
+            </Box>
+
+            <Box mb="6">
+              <Heading as="h3" size="5" style={{ paddingBottom: "10px" }}>
+                Select Drawings to Sync
+              </Heading>
+              <Text
+                size="2"
+                as="p"
+                style={{ lineHeight: 1.1, marginBottom: "16px" }}
+              >
+                Choose which drawings you want to sync with GitHub.
+              </Text>
+
+              <Box
+                style={{
+                  background: "var(--gray-a3)",
+                  borderRadius: "var(--radius-3)",
+                  padding: "16px",
+                }}
+              >
+                <ScrollArea style={{ height: "300px" }}>
+                  <Table.Root>
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.ColumnHeaderCell>
+                          <Checkbox
+                            checked={
+                              selectedDrawings.length === drawings.length
+                            }
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell>
+                          Drawing Name
+                        </Table.ColumnHeaderCell>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {drawings.map((drawing) => (
+                        <Table.Row key={drawing.id}>
+                          <Table.Cell>
+                            <Checkbox
+                              checked={selectedDrawings.includes(drawing.id)}
+                              onCheckedChange={(checked) =>
+                                handleSelectDrawing(drawing.id, checked)
+                              }
+                            />
+                          </Table.Cell>
+                          <Table.Cell>{drawing.name}</Table.Cell>
+                        </Table.Row>
+                      ))}
+                    </Table.Body>
+                  </Table.Root>
+                </ScrollArea>
+              </Box>
             </Box>
 
             <Box>

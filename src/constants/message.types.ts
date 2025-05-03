@@ -13,6 +13,7 @@ export enum MessageType {
   GET_CHANGE_HISTORY = "GET_CHANGE_HISTORY",
   SHOW_MERGE_CONFLICT = "SHOW_MERGE_CONFLICT",
   SYNC_DRAWING = "SYNC_DRAWING",
+  CONFIGURE_GITHUB_PROVIDER = "CONFIGURE_GITHUB_PROVIDER",
 }
 
 export type SaveNewDrawingMessage = {
@@ -20,6 +21,7 @@ export type SaveNewDrawingMessage = {
   payload: {
     id: string;
     name: string;
+    sync?: boolean;
     excalidraw: string;
     excalidrawState: string;
     versionFiles: string;
@@ -34,6 +36,7 @@ export type SaveDrawingMessage = {
   payload: {
     id: string;
     name?: string;
+    sync?: boolean;
     excalidraw: string;
     excalidrawState: string;
     versionFiles: string;
@@ -85,5 +88,15 @@ export type SyncDrawingMessage = {
   type: MessageType.SYNC_DRAWING;
   payload: {
     id: string;
+  };
+};
+
+export type ConfigureGithubProviderMessage = {
+  type: MessageType.CONFIGURE_GITHUB_PROVIDER;
+  payload: {
+    token: string;
+    repoOwner: string;
+    repoName: string;
+    drawingsToSync: string[];
   };
 };

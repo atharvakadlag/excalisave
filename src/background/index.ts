@@ -1,6 +1,6 @@
 import { browser } from "webextension-polyfill-ts";
 import {
-  CleanupFilesMessage,
+  CleanupFilesMessage, ConfigureGithubProviderMessage,
   DeleteDrawingMessage,
   GetChangeHistoryMessage,
   MessageType,
@@ -39,6 +39,7 @@ browser.runtime.onMessage.addListener(
       | CleanupFilesMessage
       | DeleteDrawingMessage
       | GetChangeHistoryMessage
+      | ConfigureGithubProviderMessage
       | any,
     _sender: any
   ) => {
@@ -52,6 +53,7 @@ browser.runtime.onMessage.addListener(
           const drawing: IDrawing = {
             id: message.payload.id,
             name: message.payload.name,
+            sync: message.payload.sync || false,
             createdAt: new Date().toISOString(),
             imageBase64: message.payload.imageBase64,
             viewBackgroundColor: message.payload.viewBackgroundColor,
@@ -80,6 +82,7 @@ browser.runtime.onMessage.addListener(
           const newData: IDrawing = {
             ...exitentDrawing,
             name: message.payload.name || exitentDrawing.name,
+            sync: message.payload.sync || exitentDrawing.sync,
             imageBase64:
               message.payload.imageBase64 || exitentDrawing.imageBase64,
             viewBackgroundColor:
@@ -194,12 +197,12 @@ browser.runtime.onMessage.addListener(
 
           return { success: true };
 
-        case "CONFIGURE_GITHUB_PROVIDER":
-          const { token, repoOwner, repoName } = message.payload;
+        case MessageType.CONFIGURE_GITHUB_PROVIDER:
           return await githubConfigService.configureGitHubProvider(
-            token,
-            repoOwner,
-            repoName
+              message.payload.token,
+              message.payload.repoOwner,
+              message.payload.repoName,
+              message.payload.drawingsToSync
           );
 
         case "REMOVE_GITHUB_PROVIDER":

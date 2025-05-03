@@ -23,7 +23,8 @@ export class GitHubConfigService {
   public async configureGitHubProvider(
     token: string,
     repoOwner: string,
-    repoName: string
+    repoName: string,
+    drawingsToSync?: string[]
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const githubProvider = new GitHubProvider();
@@ -37,7 +38,7 @@ export class GitHubConfigService {
 
       // Set the provider and initialize
       this.syncService.setProvider(githubProvider);
-      await this.syncService.initialize();
+      await this.syncService.initialize(drawingsToSync);
 
       return { success: true };
     } catch (error) {

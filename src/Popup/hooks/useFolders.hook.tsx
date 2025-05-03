@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { browser } from "webextension-polyfill-ts";
 import { Folder } from "../../interfaces/folder.interface";
 import { RandomUtils } from "../../lib/utils/random.utils";
-import { MessageType } from "../../constants/message.types";
 
 export function useFolders() {
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -51,13 +50,6 @@ export function useFolders() {
         if (folder.drawingIds.includes(drawingId)) {
           return folder;
         }
-
-        browser.runtime.sendMessage({
-          type: MessageType.SYNC_DRAWING,
-          payload: {
-            id: drawingId,
-          },
-        });
 
         return {
           ...folder,

@@ -7,6 +7,7 @@ export interface IDrawing {
   id: string;
   name: string;
   createdAt: string;
+  sync: boolean;
   imageBase64?: string;
   viewBackgroundColor?: string;
   data: {

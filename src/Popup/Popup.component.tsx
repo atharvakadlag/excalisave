@@ -38,7 +38,7 @@ import "./Popup.styles.scss";
 import {
   CleanupFilesMessage,
   DeleteDrawingMessage,
-  MessageType,
+  MessageType, SyncDrawingMessage,
 } from "../constants/message.types";
 import { MergeConflictDialog } from "../components/MergeConflict/MergeConflict.component";
 import { SyncService } from "../services/sync.service";
@@ -227,7 +227,8 @@ const Popup: React.FC = () => {
         payload: {
           id,
         },
-      });
+      } as SyncDrawingMessage);
+
     } catch (error) {
       XLogger.error("Error renaming drawing", error);
     }
