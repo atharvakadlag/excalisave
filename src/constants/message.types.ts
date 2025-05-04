@@ -13,6 +13,7 @@ export enum MessageType {
   GET_CHANGE_HISTORY = "GET_CHANGE_HISTORY",
   SHOW_MERGE_CONFLICT = "SHOW_MERGE_CONFLICT",
   SYNC_DRAWING = "SYNC_DRAWING",
+  DELETE_DRAWING_SYNC = "DELETE_DRAWING_SYNC",
   CONFIGURE_GITHUB_PROVIDER = "CONFIGURE_GITHUB_PROVIDER",
 }
 
@@ -63,6 +64,13 @@ export type CleanupFilesMessage = {
 
 export type DeleteDrawingMessage = {
   type: MessageType.DELETE_DRAWING;
+  payload: {
+    id: string;
+  };
+};
+
+export type DeleteDrawingSyncMessage = {
+  type: MessageType.DELETE_DRAWING_SYNC;
   payload: {
     id: string;
   };

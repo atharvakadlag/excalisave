@@ -1,6 +1,7 @@
 import { browser } from "webextension-polyfill-ts";
 import {
-  CleanupFilesMessage, ConfigureGithubProviderMessage,
+  CleanupFilesMessage,
+  ConfigureGithubProviderMessage,
   DeleteDrawingMessage,
   GetChangeHistoryMessage,
   MessageType,
@@ -199,10 +200,10 @@ browser.runtime.onMessage.addListener(
 
         case MessageType.CONFIGURE_GITHUB_PROVIDER:
           return await githubConfigService.configureGitHubProvider(
-              message.payload.token,
-              message.payload.repoOwner,
-              message.payload.repoName,
-              message.payload.drawingsToSync
+            message.payload.token,
+            message.payload.repoOwner,
+            message.payload.repoName,
+            message.payload.drawingsToSync
           );
 
         case "REMOVE_GITHUB_PROVIDER":
@@ -213,6 +214,9 @@ browser.runtime.onMessage.addListener(
 
         case "CHECK_GITHUB_AUTH":
           return await githubConfigService.checkGitHubAuth();
+
+        case MessageType.DELETE_DRAWING_SYNC:
+          return await syncService.deleteDrawing(message.payload.id);
 
         case MessageType.GET_CHANGE_HISTORY:
           const changeHistory = await syncService.getChangeHistory(

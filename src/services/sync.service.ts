@@ -28,21 +28,21 @@ export class SyncService {
   public async initialize(drawingsToSync: string[]): Promise<void> {
     if (!this.provider) return;
     await this.provider.initialize();
+    await this.syncFiles();
     for (const drawingId of drawingsToSync) {
       await this.addSyncToDrawing(drawingId);
     }
-    await this.syncFiles();
   }
 
   public async addSyncToDrawing(drawingId: string): Promise<void> {
-    const drawing = (
-         await browser.storage.local.get(drawingId)
-    )[drawingId] as IDrawing;
+    const drawing = (await browser.storage.local.get(drawingId))[
+      drawingId
+    ] as IDrawing;
 
     if (!drawing) return;
 
     drawing.sync = true;
-    await browser.storage.local.set({[drawingId]: drawing});
+    await browser.storage.local.set({ [drawingId]: drawing });
   }
 
   public async isAuthenticated(): Promise<boolean> {
@@ -82,7 +82,7 @@ export class SyncService {
 
       // This gives merge conflicts on the version numbers ( which update on selecting or not selecting )
       // I would recommend ( if getting a merge conflict ).
-      // Also doing a compare right here and just select newest if nothing visually changed automatically.
+      // Also doing a compare right here and just select newest if nothing visually changed.
 
       // Send a message to the popup to show the conflict dialog
       await browser.runtime.sendMessage({
@@ -140,7 +140,7 @@ export class SyncService {
 
     // save every drawing in the local storage
     for (const drawing of drawings) {
-      await browser.storage.local.set({[drawing.id]: drawing});
+      await browser.storage.local.set({ [drawing.id]: drawing });
     }
   }
 }

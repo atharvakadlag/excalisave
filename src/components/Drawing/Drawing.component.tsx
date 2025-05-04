@@ -1,4 +1,8 @@
-import { DotsHorizontalIcon, HeartFilledIcon } from "@radix-ui/react-icons";
+import {
+  DotsHorizontalIcon,
+  HeartFilledIcon,
+  CheckCircledIcon,
+} from "@radix-ui/react-icons";
 import {
   Box,
   Button,
@@ -34,6 +38,8 @@ type DrawingProps = {
 
   onAddToFolder: (drawingId: string, folderId: string) => void;
   onRemoveFromFolder: (drawingId: string, folderId: string) => void;
+
+  onToggleSync?: (id: string, sync: boolean) => void;
 };
 
 export function Drawing(props: DrawingProps) {
@@ -71,6 +77,22 @@ export function Drawing(props: DrawingProps) {
               : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
           }
         />
+        {props.drawing.sync && (
+          <CheckCircledIcon
+            className="Drawing__sync-indicator"
+            width="16"
+            height="16"
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              color: "#30a46c",
+              backgroundColor: "white",
+              borderRadius: "50%",
+              padding: "2px",
+            }}
+          />
+        )}
 
         <Flex justify="between" align="center" pr="1" pl="1">
           <Text
@@ -132,6 +154,13 @@ export function Drawing(props: DrawingProps) {
                   Remove from collection
                 </DropdownMenu.Item>
               )}
+              <DropdownMenu.Item
+                onClick={() =>
+                  props.onToggleSync?.(props.drawing.id, !props.drawing.sync)
+                }
+              >
+                {props.drawing.sync ? "Disable sync" : "Enable sync"}
+              </DropdownMenu.Item>
               <DropdownMenu.Separator />
               <DropdownMenu.Item
                 disabled={!props.inExcalidrawPage}

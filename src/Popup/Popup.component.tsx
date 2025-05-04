@@ -38,7 +38,9 @@ import "./Popup.styles.scss";
 import {
   CleanupFilesMessage,
   DeleteDrawingMessage,
-  MessageType, SyncDrawingMessage,
+  DeleteDrawingSyncMessage,
+  MessageType,
+  SyncDrawingMessage,
 } from "../constants/message.types";
 import { MergeConflictDialog } from "../components/MergeConflict/MergeConflict.component";
 import { SyncService } from "../services/sync.service";
@@ -228,7 +230,6 @@ const Popup: React.FC = () => {
           id,
         },
       } as SyncDrawingMessage);
-
     } catch (error) {
       XLogger.error("Error renaming drawing", error);
     }
@@ -285,8 +286,8 @@ const Popup: React.FC = () => {
     }
   };
 
-  const handleCreateNewDrawing = async (name: string) => {
-    await DrawingStore.saveNewDrawing({ name });
+  const handleCreateNewDrawing = async (name: string, sync: boolean = true) => {
+    await DrawingStore.saveNewDrawing({ name, sync });
     window.close();
   };
 
@@ -307,6 +308,47 @@ const Popup: React.FC = () => {
 
   const handleRemoveFromFavorites = async (drawingId: string) => {
     await removeFromFavorites(drawingId);
+  };
+
+  const handleToggleSync = async (drawingId: string, sync: boolean) => {
+    try {
+      // Update the UI
+      const newDrawing = drawings.map((drawing) => {
+        if (drawing.id === drawingId) return { ...drawing, sync };
+        return drawing;
+      });
+      setDrawings(newDrawing);
+
+      // Update local storage
+      await browser.storage.local.set({
+        [drawingId]: {
+          ...drawings.find((drawing) => drawing.id === drawingId),
+          sync,
+        },
+      });
+
+      // If enabling sync, trigger an immediate sync
+      if (sync) {
+        await browser.runtime.sendMessage({
+          type: MessageType.SYNC_DRAWING,
+          payload: {
+            id: drawingId,
+          },
+        } as SyncDrawingMessage);
+        return;
+      }
+
+      if (!sync) {
+        await browser.runtime.sendMessage({
+          type: MessageType.DELETE_DRAWING_SYNC,
+          payload: {
+            id: drawingId,
+          },
+        } as DeleteDrawingSyncMessage);
+      }
+    } catch (error) {
+      XLogger.error("Error toggling sync for drawing", error);
+    }
   };
 
   const currentDrawing = drawings.find(
@@ -381,6 +423,7 @@ const Popup: React.FC = () => {
             onDeleteDrawing={onDeleteDrawing}
             onAddToFolder={addDrawingToFolder}
             onRemoveFromFolder={removeDrawingFromFolder}
+            onToggleSync={handleToggleSync}
           />
         ))}
       </Grid>
