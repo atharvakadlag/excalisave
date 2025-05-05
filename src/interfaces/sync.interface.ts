@@ -7,6 +7,10 @@ export interface ChangeHistoryItem {
     name: string;
     date: string;
   };
+  files?: Array<{
+    name: string;
+    status: "added" | "modified" | "deleted";
+  }>;
 }
 
 export interface SyncProvider {

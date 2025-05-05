@@ -26,7 +26,6 @@ export class SyncService {
   }
 
   public async initialize(drawingsToSync: string[]): Promise<void> {
-    if (!this.provider) return;
     await this.provider.initialize();
     await this.syncFiles();
     for (const drawingId of drawingsToSync) {
@@ -46,7 +45,13 @@ export class SyncService {
   }
 
   public async isAuthenticated(): Promise<boolean> {
-    return (await this.provider?.isAuthenticated()) || false;
+    if (!this.provider) return false;
+    if (await this.provider.isAuthenticated()) {
+      return true;
+    } else {
+      await this.provider.initialize();
+      return this.provider.isAuthenticated();
+    }
   }
 
   /**
@@ -56,8 +61,6 @@ export class SyncService {
    * @returns Object indicating success status
    */
   public async updateDrawing(drawing: IDrawing): Promise<{ success: boolean }> {
-    // Early returns for invalid states
-    if (!this.provider) return { success: false };
     if (!drawing.sync) return { success: false };
     if (!(await this.isAuthenticated())) return { success: false };
 
@@ -105,7 +108,6 @@ export class SyncService {
    * @param drawing The drawing to delete
    */
   public async deleteDrawing(drawing: IDrawing): Promise<void> {
-    if (!this.provider) return;
     if (!drawing.sync) return;
     if (!(await this.isAuthenticated())) return;
 
@@ -118,7 +120,6 @@ export class SyncService {
    * @return Promise<ChangeHistoryItem[]>
    */
   public async getChangeHistory(limit?: number): Promise<ChangeHistoryItem[]> {
-    if (!this.provider) return [];
     if (!(await this.isAuthenticated())) return [];
 
     return await this.provider.getChangeHistory(limit);
@@ -129,7 +130,6 @@ export class SyncService {
    * Updates the sync folder with the latest drawings
    */
   public async syncFiles(): Promise<void> {
-    if (!this.provider) return;
     if (!(await this.isAuthenticated())) return;
 
     const drawings: IDrawing[] = await this.provider.getAllFiles();

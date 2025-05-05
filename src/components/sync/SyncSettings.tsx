@@ -9,9 +9,10 @@ import {
   TextField,
   Theme,
   HoverCard,
-  Table,
   ScrollArea,
   Checkbox,
+  Card,
+  Badge,
 } from "@radix-ui/themes";
 import { ArrowLeftIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 import { browser } from "webextension-polyfill-ts";
@@ -22,6 +23,7 @@ import {
 } from "../../constants/message.types";
 import { ChangeHistoryItem } from "../../interfaces/sync.interface";
 import { IDrawing } from "../../interfaces/drawing.interface";
+import "./SyncSettings.scss";
 
 interface SyncSettingsProps {
   onBack: () => void;
@@ -38,6 +40,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
   const [commitError, setCommitError] = useState<string>("");
   const [drawings, setDrawings] = useState<IDrawing[]>([]);
   const [selectedDrawings, setSelectedDrawings] = useState<string[]>([]);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   useEffect(() => {
     const loadExistingConfig = async () => {
@@ -51,6 +54,23 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
           setGithubToken(response.config.token || "");
           setRepoOwner(response.config.repoOwner || "");
           setRepoName(response.config.repoName || "");
+
+          // Check if sync is initialized
+          const authResponse = await browser.runtime.sendMessage({
+            type: "CHECK_GITHUB_AUTH",
+          });
+          setIsInitialized(
+            authResponse.success && authResponse.isAuthenticated
+          );
+
+          // Load commit history if GitHub is configured
+          if (
+            response.config.token &&
+            response.config.repoOwner &&
+            response.config.repoName
+          ) {
+            loadCommitHistory();
+          }
         }
 
         // Load drawings
@@ -73,13 +93,6 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
 
     loadExistingConfig();
   }, []);
-
-  useEffect(() => {
-    // Load commit history when GitHub is configured
-    if (githubToken && repoOwner && repoName) {
-      loadCommitHistory();
-    }
-  }, [githubToken, repoOwner, repoName]);
 
   const loadCommitHistory = async () => {
     try {
@@ -147,6 +160,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
 
       if (!response.success) {
         setError(response.error || "Failed to initialize GitHub sync");
+        setIsInitialized(false);
         return;
       }
 
@@ -157,9 +171,11 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
         setError(
           "Failed to authenticate with GitHub. Please check your token and repository settings."
         );
+        setIsInitialized(false);
         return;
       }
 
+      setIsInitialized(true);
       // Load commit history after successful configuration
       loadCommitHistory();
     } catch (error) {
@@ -168,6 +184,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
           ? error.message
           : "Failed to initialize GitHub sync"
       );
+      setIsInitialized(false);
     } finally {
       setIsLoading(false);
     }
@@ -181,69 +198,53 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
     }
   };
 
-  const handleSelectDrawing = (
-    drawingId: string,
-    checked: boolean | string
-  ) => {
-    if (checked === true) {
-      setSelectedDrawings([...selectedDrawings, drawingId]);
-    } else {
-      setSelectedDrawings(selectedDrawings.filter((id) => id !== drawingId));
-    }
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
   };
 
   return (
-    <Theme
-      accentColor="iris"
-      style={{
-        height: "100%",
-      }}
-    >
-      <Box
-        style={{
-          background: "var(--gray-a2)",
-          borderRadius: "var(--radius-3)",
-          width: "100vw",
-          height: "100vh",
-        }}
-      >
-        <Container size="2">
-          <Flex gap="3" px="1" py="9" justify="start" align="center">
+    <Theme accentColor="iris" className="sync-settings-theme">
+      <Box className="sync-settings-container">
+        <Container size="3" className="sync-settings-content">
+          <Flex gap="3" px="1" py="6" justify="start" align="center">
             <Button
               variant="soft"
               onClick={onBack}
-              style={{ marginRight: "16px" }}
+              style={{ marginRight: "var(--space-4)" }}
             >
               <ArrowLeftIcon width="16" height="16" />
               Back
             </Button>
             <Box>
-              <Heading as="h1" size="7" style={{ paddingBottom: "4px" }}>
-                Sync Settings
-              </Heading>
-              <Text size="2" as="p" style={{ lineHeight: 1.1 }}>
-                Configure GitHub integration and manage synced files.
+              <Flex gap="2" align="center">
+                <Heading as="h1" size="7" mb="1">
+                  Sync Settings
+                </Heading>
+                <Badge color={isInitialized ? "green" : "red"}>
+                  {isInitialized ? "Initialized" : "Not Initialized"}
+                </Badge>
+              </Flex>
+              <Text size="2" as="p" color="gray">
+                Configure GitHub integration, manage synced files, and view
+                history.
               </Text>
             </Box>
           </Flex>
 
-          <Box px="4">
-            <Box mb="6">
-              <Heading as="h3" size="5" style={{ paddingBottom: "10px" }}>
+          <Flex
+            direction="column"
+            gap="4"
+            px="1"
+            className="sync-settings-grid"
+          >
+            <Card size="3" className="sync-settings-card">
+              <Heading as="h3" size="5" mb="2">
                 GitHub Integration
               </Heading>
-              <Text
-                size="2"
-                as="p"
-                style={{ lineHeight: 1.1, marginBottom: "16px" }}
-              >
+              <Text size="2" as="p" color="gray" mb="4">
                 Connect your GitHub account to sync your drawings. You'll need a
-                Personal Access Token with 'repo' scope.{" "}
+                Personal Access Token.{" "}
                 <HoverCard.Root>
                   <HoverCard.Trigger>
                     <InfoCircledIcon
@@ -265,7 +266,13 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       </Text>
                       <Text size="2">
                         1. Create a GitHub Personal Access Token:
-                        <ul style={{ marginTop: "4px", marginLeft: "20px" }}>
+                        <ul
+                          style={{
+                            marginTop: "4px",
+                            marginLeft: "20px",
+                            paddingLeft: "var(--space-2)",
+                          }}
+                        >
                           <li>
                             Go to GitHub Settings → Developer Settings →
                             Personal Access Tokens → Fine-grained tokens
@@ -279,7 +286,11 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                           <li>
                             Under "Repository permissions":
                             <ul
-                              style={{ marginTop: "4px", marginLeft: "20px" }}
+                              style={{
+                                marginTop: "4px",
+                                marginLeft: "20px",
+                                paddingLeft: "var(--space-2)",
+                              }}
                             >
                               <li>Contents: Read and write</li>
                               <li>Metadata: Read-only</li>
@@ -293,7 +304,13 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       </Text>
                       <Text size="2">
                         2. Create a GitHub Repository:
-                        <ul style={{ marginTop: "4px", marginLeft: "20px" }}>
+                        <ul
+                          style={{
+                            marginTop: "4px",
+                            marginLeft: "20px",
+                            paddingLeft: "var(--space-2)",
+                          }}
+                        >
                           <li>
                             Go to GitHub and click the "+" in the top right
                           </li>
@@ -308,7 +325,13 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       </Text>
                       <Text size="2">
                         3. Enter the details below:
-                        <ul style={{ marginTop: "4px", marginLeft: "20px" }}>
+                        <ul
+                          style={{
+                            marginTop: "4px",
+                            marginLeft: "20px",
+                            paddingLeft: "var(--space-2)",
+                          }}
+                        >
                           <li>Paste your Personal Access Token</li>
                           <li>
                             Enter your GitHub username or organization name
@@ -321,15 +344,15 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                 </HoverCard.Root>
               </Text>
 
-              <Flex direction="column" gap="3" style={{ maxWidth: "400px" }}>
+              <Flex direction="column" gap="4">
                 <Box>
-                  <Text size="2" style={{ marginBottom: "4px" }}>
+                  <Text as="label" size="2" mb="1">
                     GitHub Token <Text color="red">*</Text>
                   </Text>
                   <TextField.Root>
                     <TextField.Input
                       type="password"
-                      placeholder="Enter your GitHub token"
+                      placeholder="Enter your GitHub token (e.g., ghp_...)"
                       value={githubToken}
                       onChange={(e) => setGithubToken(e.target.value)}
                       required
@@ -338,12 +361,12 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                   </TextField.Root>
                 </Box>
                 <Box>
-                  <Text size="2" style={{ marginBottom: "4px" }}>
+                  <Text as="label" size="2" mb="1">
                     Repository Owner <Text color="red">*</Text>
                   </Text>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder="Repository owner (username or organization)"
+                      placeholder="Your GitHub username or organization"
                       value={repoOwner}
                       onChange={(e) => setRepoOwner(e.target.value)}
                       required
@@ -352,12 +375,12 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                   </TextField.Root>
                 </Box>
                 <Box>
-                  <Text size="2" style={{ marginBottom: "4px" }}>
+                  <Text as="label" size="2" mb="1">
                     Repository Name <Text color="red">*</Text>
                   </Text>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder="Repository name"
+                      placeholder="The name of your repository"
                       value={repoName}
                       onChange={(e) => setRepoName(e.target.value)}
                       required
@@ -370,7 +393,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                     {error}
                   </Text>
                 )}
-                <Flex gap="3">
+                <Flex gap="3" mt="2">
                   <Button
                     onClick={handleSaveAndUse}
                     disabled={
@@ -391,125 +414,141 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                   </Button>
                 </Flex>
               </Flex>
-            </Box>
+            </Card>
 
-            <Box mb="6">
-              <Heading as="h3" size="5" style={{ paddingBottom: "10px" }}>
-                Select Drawings to Sync
+            <Card size="3" className="sync-settings-card">
+              <Heading as="h3" size="5" mb="2">
+                Select Drawings to Sync ({selectedDrawings.length} /{" "}
+                {drawings.length})
               </Heading>
-              <Text
-                size="2"
-                as="p"
-                style={{ lineHeight: 1.1, marginBottom: "16px" }}
-              >
-                Choose which drawings you want to sync with GitHub.
+              <Text size="2" as="p" color="gray" mb="4">
+                Choose whether to sync all your drawings with GitHub.
               </Text>
 
-              <Box
-                style={{
-                  background: "var(--gray-a3)",
-                  borderRadius: "var(--radius-3)",
-                  padding: "16px",
-                }}
-              >
-                <ScrollArea style={{ height: "300px" }}>
-                  <Table.Root>
-                    <Table.Header>
-                      <Table.Row>
-                        <Table.ColumnHeaderCell>
-                          <Checkbox
-                            checked={
-                              selectedDrawings.length === drawings.length
-                            }
-                            onCheckedChange={handleSelectAll}
-                          />
-                        </Table.ColumnHeaderCell>
-                        <Table.ColumnHeaderCell>
-                          Drawing Name
-                        </Table.ColumnHeaderCell>
-                      </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                      {drawings.map((drawing) => (
-                        <Table.Row key={drawing.id}>
-                          <Table.Cell>
-                            <Checkbox
-                              checked={selectedDrawings.includes(drawing.id)}
-                              onCheckedChange={(checked) =>
-                                handleSelectDrawing(drawing.id, checked)
-                              }
-                            />
-                          </Table.Cell>
-                          <Table.Cell>{drawing.name}</Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table.Root>
-                </ScrollArea>
-              </Box>
-            </Box>
+              <Flex direction="column" gap="2">
+                <Flex
+                  justify="between"
+                  align="center"
+                  style={{ padding: "var(--space-2) 0" }}
+                >
+                  <Text size="2" weight="bold">
+                    Sync All Drawings
+                  </Text>
+                  <Checkbox
+                    checked={
+                      drawings.length > 0 &&
+                      selectedDrawings.length === drawings.length
+                    }
+                    onCheckedChange={handleSelectAll}
+                    disabled={drawings.length === 0}
+                  />
+                </Flex>
+              </Flex>
+            </Card>
 
-            <Box>
-              <Heading as="h3" size="5" style={{ paddingBottom: "10px" }}>
-                Commit History
+            <Card size="3" className="sync-settings-card">
+              <Heading as="h3" size="5" mb="2">
+                Sync History
               </Heading>
-              <Text
-                size="2"
-                as="p"
-                style={{ lineHeight: 1.1, marginBottom: "16px" }}
-              >
-                Recent commits to your GitHub repository.
+              <Text size="2" as="p" color="gray" mb="4">
+                Recent synchronization activity with your GitHub repository.
               </Text>
 
               {isLoadingCommits ? (
-                <Text size="2">Loading commit history...</Text>
+                <Flex
+                  align="center"
+                  justify="center"
+                  gap="2"
+                  style={{ minHeight: 100 }}
+                >
+                  <Text size="2" color="gray">
+                    Loading sync history...
+                  </Text>
+                </Flex>
               ) : commitError ? (
-                <Text size="2" color="red">
-                  {commitError}
-                </Text>
-              ) : commits.length === 0 ? (
-                <Text size="2" color="gray">
-                  No commits found. Make sure your GitHub configuration is
-                  correct.
-                </Text>
-              ) : (
-                <Box
+                <Card
+                  variant="surface"
                   style={{
-                    background: "var(--gray-a3)",
-                    borderRadius: "var(--radius-3)",
-                    padding: "16px",
+                    backgroundColor: "var(--red-a3)",
+                    border: "1px solid var(--red-a6)",
                   }}
                 >
-                  <ScrollArea style={{ height: "300px" }}>
-                    <Table.Root>
-                      <Table.Header>
-                        <Table.Row>
-                          <Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
-                          <Table.ColumnHeaderCell>
-                            Author
-                          </Table.ColumnHeaderCell>
-                          <Table.ColumnHeaderCell>
-                            Message
-                          </Table.ColumnHeaderCell>
-                        </Table.Row>
-                      </Table.Header>
-                      <Table.Body>
-                        {commits.map((commit) => (
-                          <Table.Row key={commit.id}>
-                            <Table.Cell>
+                  <Text size="2" color="red">
+                    {commitError}
+                  </Text>
+                </Card>
+              ) : commits.length === 0 ? (
+                <Card variant="surface">
+                  <Text size="2" color="gray">
+                    No sync history found. Configure GitHub above and sync some
+                    drawings.
+                  </Text>
+                </Card>
+              ) : (
+                <ScrollArea className="sync-history-scroll">
+                  <Flex direction="column" gap="3">
+                    {commits.map((commit) => (
+                      <Card key={commit.id} size="1">
+                        <Flex direction="column" gap="2">
+                          <Flex justify="between" align="start" gap="3">
+                            <Text
+                              size="2"
+                              weight="medium"
+                              style={{ flexGrow: 1 }}
+                            >
+                              {commit.message}
+                            </Text>
+                            <Text
+                              size="1"
+                              color="gray"
+                              style={{ whiteSpace: "nowrap" }}
+                            >
                               {formatDate(commit.author.date)}
-                            </Table.Cell>
-                            <Table.Cell>{commit.author.name}</Table.Cell>
-                            <Table.Cell>{commit.message}</Table.Cell>
-                          </Table.Row>
-                        ))}
-                      </Table.Body>
-                    </Table.Root>
-                  </ScrollArea>
-                </Box>
+                            </Text>
+                          </Flex>
+                          <Flex gap="2" align="center">
+                            <Text size="1" color="gray">
+                              {commit.id.slice(0, 7)}
+                            </Text>
+                          </Flex>
+                          {commit.files && commit.files.length > 0 && (
+                            <Box
+                              style={{
+                                marginTop: "var(--space-1)",
+                                padding: "var(--space-2)",
+                                background: "var(--gray-a2)",
+                                borderRadius: "var(--radius-2)",
+                                border: "1px solid var(--gray-a4)",
+                              }}
+                            >
+                              <Text
+                                size="1"
+                                weight="medium"
+                                mb="1"
+                                color="gray"
+                              >
+                                Changed Files:
+                              </Text>
+                              <Flex direction="column" gap="1">
+                                {commit.files.map((file, index) => (
+                                  <Text key={index} size="1" color="gray">
+                                    {file.status === "added" && "➕ "}
+                                    {file.status === "modified" && "✏️ "}
+                                    {file.status === "deleted" && "🗑️ "}
+                                    {file.name}
+                                  </Text>
+                                ))}
+                              </Flex>
+                            </Box>
+                          )}
+                        </Flex>
+                      </Card>
+                    ))}
+                  </Flex>
+                </ScrollArea>
               )}
-            </Box>
-          </Box>
+            </Card>
+          </Flex>
         </Container>
       </Box>
     </Theme>
