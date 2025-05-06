@@ -44,6 +44,7 @@ import {
 } from "../constants/message.types";
 import { MergeConflictDialog } from "../components/MergeConflict/MergeConflict.component";
 import { SyncService } from "../services/sync.service";
+import { searchDrawings } from "../services/search.service";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -367,34 +368,26 @@ const Popup: React.FC = () => {
   };
 
   const filterDrawings = () => {
+    // If we're in a folder view, filter by folder
     if (sidebarSelected?.startsWith("folder:")) {
       const folder = folders.find((folder) => folder.id === sidebarSelected);
-
-      if (!folder) {
-        return [];
-      }
-
-      return drawings.filter((drawing) => {
-        return folder.drawingIds.includes(drawing.id);
-      });
+      return folder
+        ? drawings.filter((drawing) => folder.drawingIds.includes(drawing.id))
+        : [];
     }
 
-    switch (sidebarSelected) {
-      case "Favorites":
-        return drawings.filter((drawing) => {
-          return favorites.includes(drawing.id);
-        });
-      case "Results":
-        return drawings.filter((drawing) => {
-          // TODO: Fix this, this is not enecssary
-          return (
-            drawing.name &&
-            drawing.name.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        });
-      default:
-        return drawings;
+    // If we're in search mode, filter by search term
+    if (sidebarSelected === "Results" && searchTerm) {
+      return searchDrawings(drawings, searchTerm);
     }
+
+    // If we're in favorites, filter by favorites
+    if (sidebarSelected === "Favorites") {
+      return drawings.filter((drawing) => favorites.includes(drawing.id));
+    }
+
+    // Default case: show all drawings
+    return drawings;
   };
 
   const filteredDrawings = filterDrawings();
