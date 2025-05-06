@@ -35,6 +35,10 @@ browser.runtime.onMessage.addListener(
       if (!message || !message.type) return;
 
       switch (message.type) {
+        case "OpenPopup":
+          browser.action.openPopup();
+          break;
+
         case MessageType.SAVE_NEW_DRAWING:
           await browser.storage.local.set({
             [message.payload.id]: {
