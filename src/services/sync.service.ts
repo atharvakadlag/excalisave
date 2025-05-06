@@ -40,7 +40,11 @@ export class SyncService {
 
     if (!drawing) return;
 
+    // We set these to null to avoid conflicts with the sync provider
     drawing.sync = true;
+    drawing.data.versionDataState = null;
+    drawing.data.versionFiles = null;
+
     await browser.storage.local.set({ [drawingId]: drawing });
   }
 
@@ -63,6 +67,11 @@ export class SyncService {
   public async updateDrawing(drawing: IDrawing): Promise<{ success: boolean }> {
     if (!drawing.sync) return { success: false };
     if (!(await this.isAuthenticated())) return { success: false };
+
+    // We set these to null to avoid conflicts with the sync provider
+    drawing.sync = true;
+    drawing.data.versionDataState = null;
+    drawing.data.versionFiles = null;
 
     // Attempt to update the drawing in the provider
     const result = await this.provider.updateDrawing(drawing);
