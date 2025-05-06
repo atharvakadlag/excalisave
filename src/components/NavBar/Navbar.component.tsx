@@ -14,6 +14,7 @@ import {
   IconButton,
   Text,
   TextField,
+  Checkbox,
 } from "@radix-ui/themes";
 import React, { ReactElement, useEffect, useState } from "react";
 import { IDrawing } from "../../interfaces/drawing.interface";
@@ -26,7 +27,7 @@ const CalloutText = Callout.Text as any;
 type NavBarProps = {
   SearchComponent: ReactElement;
   CurrentItemButton?: ReactElement;
-  onCreateNewDrawing: (name: string) => void;
+  onCreateNewDrawing: (name: string, sync: boolean) => void;
   onNewDrawing: () => void;
   onSaveDrawing: () => void;
   currentDrawing?: IDrawing;
@@ -45,6 +46,7 @@ export function NavBar({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [enableSync, setEnableSync] = useState(true);
 
   useEffect(() => {
     if (props.currentDrawing) {
@@ -54,12 +56,12 @@ export function NavBar({
 
   const handleRenameDrawing = () => {
     setIsCreateDialogOpen(false);
-    props?.onCreateNewDrawing(name);
+    props?.onCreateNewDrawing(name, enableSync);
   };
 
   const handleDuplicateDrawing = () => {
     setIsDuplicateDialogOpen(false);
-    props?.onCreateNewDrawing(duplicateName);
+    props?.onCreateNewDrawing(duplicateName, true);
   };
 
   return (
@@ -203,7 +205,7 @@ export function NavBar({
         >
           <Dialog.Title size={"4"}>Save new Drawing</Dialog.Title>
 
-          <Flex direction="column" mt="3">
+          <Flex direction="column" mt="3" gap="3">
             <TextField.Input
               onChange={(event) => {
                 setName(event.target.value);
@@ -216,6 +218,13 @@ export function NavBar({
               value={name}
               placeholder="Name for the new drawing"
             />
+            <Flex align="center" gap="2">
+              <Checkbox
+                checked={enableSync}
+                onCheckedChange={(checked) => setEnableSync(checked as boolean)}
+              />
+              <Text size="2">Enable sync</Text>
+            </Flex>
           </Flex>
 
           <Flex gap="3" mt="4" justify="end">

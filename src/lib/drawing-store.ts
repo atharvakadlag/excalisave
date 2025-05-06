@@ -6,11 +6,12 @@ import { XLogger } from "./logger";
 
 type SaveDrawingProps = {
   name: string;
+  sync?: boolean;
 };
 
 export class DrawingStore {
-  static async saveNewDrawing({ name }: SaveDrawingProps) {
-    XLogger.log("Saving new drawing", { name });
+  static async saveNewDrawing({ name, sync = true }: SaveDrawingProps) {
+    XLogger.log("Saving new drawing", { name, sync });
     const activeTab = await TabUtils.getActiveTab();
 
     if (!activeTab) {
@@ -24,10 +25,10 @@ export class DrawingStore {
     // This workaround is to pass params to script, it's ugly but it works
     await browser.scripting.executeScript({
       target: { tabId: activeTab.id },
-      func: (id, name) => {
-        window.__SCRIPT_PARAMS__ = { id, name };
+      func: (id, name, sync) => {
+        window.__SCRIPT_PARAMS__ = { id, name, sync };
       },
-      args: [id, name],
+      args: [id, name, sync],
     });
 
     await browser.scripting.executeScript({

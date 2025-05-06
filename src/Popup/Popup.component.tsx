@@ -35,7 +35,15 @@ import { useFavorites } from "./hooks/useFavorites.hook";
 import { useRestorePoint } from "./hooks/useRestorePoint.hook";
 import { useFolders } from "./hooks/useFolders.hook";
 import "./Popup.styles.scss";
-import { CleanupFilesMessage, MessageType } from "../constants/message.types";
+import {
+  CleanupFilesMessage,
+  DeleteDrawingMessage,
+  DeleteDrawingSyncMessage,
+  MessageType,
+  SyncDrawingMessage,
+} from "../constants/message.types";
+import { MergeConflictDialog } from "../components/MergeConflict/MergeConflict.component";
+import { SyncService } from "../services/sync.service";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -67,6 +75,13 @@ const Popup: React.FC = () => {
   const { loading, startLoading } = useDrawingLoading();
   const [isConfirmSwitchDialogOpen, setIsConfirmSwitchDialogOpen] =
     useState<boolean>(false);
+  const [mergeConflict, setMergeConflict] = useState<{
+    isOpen: boolean;
+    drawingId: string;
+    localDrawing: IDrawing;
+    remoteDrawing: IDrawing;
+  } | null>(null);
+  const syncService = SyncService.getInstance();
 
   useEffect(() => {
     getRestorePoint()
@@ -157,8 +172,23 @@ const Popup: React.FC = () => {
         }
       });
 
+    // Listen for merge conflict messages
+    const handleMergeConflict = (message: any) => {
+      if (message.type === MessageType.SHOW_MERGE_CONFLICT) {
+        setMergeConflict({
+          isOpen: true,
+          drawingId: message.payload.drawingId,
+          localDrawing: message.payload.localDrawing,
+          remoteDrawing: message.payload.remoteDrawing,
+        });
+      }
+    };
+
+    browser.runtime.onMessage.addListener(handleMergeConflict);
+
     return () => {
       browser.storage.onChanged.removeListener(onDrawingChanged);
+      browser.runtime.onMessage.removeListener(handleMergeConflict);
     };
   }, []);
 
@@ -171,6 +201,7 @@ const Popup: React.FC = () => {
 
   const onRenameDrawing = async (id: string, newName: string) => {
     try {
+      // Update the UI
       const newDrawing = drawings.map((drawing) => {
         if (drawing.id === id) {
           return {
@@ -184,12 +215,21 @@ const Popup: React.FC = () => {
 
       setDrawings(newDrawing);
 
+      // Update local storage
       await browser.storage.local.set({
         [id]: {
           ...drawings.find((drawing) => drawing.id === id),
           name: newName,
         },
       });
+
+      // Sync the drawing to the cloud
+      await browser.runtime.sendMessage({
+        type: MessageType.SYNC_DRAWING,
+        payload: {
+          id,
+        },
+      } as SyncDrawingMessage);
     } catch (error) {
       XLogger.error("Error renaming drawing", error);
     }
@@ -197,14 +237,23 @@ const Popup: React.FC = () => {
 
   const onDeleteDrawing = async (id: string) => {
     try {
-      const newDrawing = drawings.filter((drawing) => drawing.id !== id);
+      // First, try to delete from sync service
+      await browser.runtime.sendMessage({
+        type: MessageType.DELETE_DRAWING,
+        payload: {
+          id,
+        },
+      } as DeleteDrawingMessage);
 
+      // Then update the UI and remove from local storage
+      const newDrawing = drawings.filter((drawing) => drawing.id !== id);
       setDrawings(newDrawing);
 
       if (currentDrawingId === id) {
         setCurrentDrawingId(undefined);
       }
 
+      // Finally, remove from folders and local storage
       await Promise.allSettled([
         removeDrawingFromAllFolders(id),
         DrawingStore.deleteDrawing(id),
@@ -237,8 +286,8 @@ const Popup: React.FC = () => {
     }
   };
 
-  const handleCreateNewDrawing = async (name: string) => {
-    await DrawingStore.saveNewDrawing({ name });
+  const handleCreateNewDrawing = async (name: string, sync: boolean = true) => {
+    await DrawingStore.saveNewDrawing({ name, sync });
     window.close();
   };
 
@@ -259,6 +308,47 @@ const Popup: React.FC = () => {
 
   const handleRemoveFromFavorites = async (drawingId: string) => {
     await removeFromFavorites(drawingId);
+  };
+
+  const handleToggleSync = async (drawingId: string, sync: boolean) => {
+    try {
+      // Update the UI
+      const newDrawing = drawings.map((drawing) => {
+        if (drawing.id === drawingId) return { ...drawing, sync };
+        return drawing;
+      });
+      setDrawings(newDrawing);
+
+      // Update local storage
+      await browser.storage.local.set({
+        [drawingId]: {
+          ...drawings.find((drawing) => drawing.id === drawingId),
+          sync,
+        },
+      });
+
+      // If enabling sync, trigger an immediate sync
+      if (sync) {
+        await browser.runtime.sendMessage({
+          type: MessageType.SYNC_DRAWING,
+          payload: {
+            id: drawingId,
+          },
+        } as SyncDrawingMessage);
+        return;
+      }
+
+      if (!sync) {
+        await browser.runtime.sendMessage({
+          type: MessageType.DELETE_DRAWING_SYNC,
+          payload: {
+            id: drawingId,
+          },
+        } as DeleteDrawingSyncMessage);
+      }
+    } catch (error) {
+      XLogger.error("Error toggling sync for drawing", error);
+    }
   };
 
   const currentDrawing = drawings.find(
@@ -333,10 +423,46 @@ const Popup: React.FC = () => {
             onDeleteDrawing={onDeleteDrawing}
             onAddToFolder={addDrawingToFolder}
             onRemoveFromFolder={removeDrawingFromFolder}
+            onToggleSync={handleToggleSync}
           />
         ))}
       </Grid>
     );
+  };
+
+  /**
+   * Handle the resolution of a merge conflict
+   * Updates local storage and UI with the chosen version
+   * @param useLocal Whether to use the local version (true) or remote version (false)
+   */
+  const handleResolveConflict = async (useLocal: boolean) => {
+    if (!mergeConflict) return;
+
+    // Select the appropriate drawing based on user choice
+    const drawingToUse = useLocal
+      ? mergeConflict.localDrawing
+      : mergeConflict.remoteDrawing;
+
+    // Update local storage with the chosen version
+    await browser.storage.local.set({
+      [mergeConflict.drawingId]: drawingToUse,
+    });
+
+    // Update the UI to reflect the changes
+    setDrawings(
+      drawings.map((drawing) =>
+        drawing.id === mergeConflict.drawingId ? drawingToUse : drawing
+      )
+    );
+
+    // Try to save to GitHub again
+    const result = await syncService.updateDrawing(drawingToUse);
+
+    if (!result.success) {
+      XLogger.error("Failed to save drawing after conflict resolution");
+    }
+
+    setMergeConflict(null);
   };
 
   return (
@@ -537,6 +663,21 @@ const Popup: React.FC = () => {
             </Flex>
           </Dialog.Content>
         </Dialog.Root>
+
+        {/* Merge Conflict Dialog */}
+        {mergeConflict && (
+          <MergeConflictDialog
+            isOpen={mergeConflict.isOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                setMergeConflict(null);
+              }
+            }}
+            localDrawing={mergeConflict.localDrawing}
+            remoteDrawing={mergeConflict.remoteDrawing}
+            onResolve={handleResolveConflict}
+          />
+        )}
       </section>
     </Theme>
   );

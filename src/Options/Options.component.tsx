@@ -6,13 +6,21 @@ import {
   Heading,
   Text,
   Theme,
+  Button,
 } from "@radix-ui/themes";
-import React from "react";
+import React, { useState } from "react";
 import { browser } from "webextension-polyfill-ts";
 import { ImpExp } from "../components/ImpExp/ImpExp.component";
+import SyncSettings from "../components/sync/SyncSettings";
 import "./Options.styles.scss";
 
 export const Options: React.FC = () => {
+  const [showSyncSettings, setShowSyncSettings] = useState(false);
+
+  if (showSyncSettings) {
+    return <SyncSettings onBack={() => setShowSyncSettings(false)} />;
+  }
+
   return (
     <Theme
       accentColor="iris"
@@ -57,6 +65,25 @@ export const Options: React.FC = () => {
             </Text>
             <br />
             <ImpExp />
+          </Box>
+
+          <Box px="4" mt="6">
+            <Heading as="h3" size={"5"} style={{ paddingBottom: "10px" }}>
+              Sync Settings:
+            </Heading>
+            <Text
+              size={"2"}
+              as="p"
+              style={{ lineHeight: 1.1, marginBottom: "16px" }}
+            >
+              Configure GitHub sync settings and manage synced files.
+            </Text>
+            <Button
+              onClick={() => setShowSyncSettings(true)}
+              style={{ maxWidth: "400px", width: "100%" }}
+            >
+              Configure Sync Settings
+            </Button>
           </Box>
         </Container>
       </Box>

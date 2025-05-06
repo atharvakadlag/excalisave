@@ -14,6 +14,7 @@ type ScriptParams = {
   name: string;
   id: string;
   setCurrent: boolean;
+  sync: boolean;
 };
 
 (async () => {
@@ -44,6 +45,7 @@ type ScriptParams = {
     payload: {
       id: drawingId,
       name: saveAsNew ? params.name : undefined,
+      sync: saveAsNew ? params.sync : undefined,
       excalidraw: drawingDataState.excalidraw,
       excalidrawState: drawingDataState.excalidrawState,
       versionFiles: drawingDataState.versionFiles,
