@@ -204,3 +204,6 @@ dist/
 .pnp.*
 
 .DS_Store
+
+.yalc/
+yalc.lock
