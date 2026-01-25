@@ -5,7 +5,7 @@ import React, { useState } from "react";
 const DialogDescription = Dialog.Description as any;
 
 type CreateFolderProps = {
-  onCreateFolder: (name: string) => Promise<void>;
+  onCreateFolder: (name: string) => void;
 };
 
 export function CreateFolder(props: CreateFolderProps) {
