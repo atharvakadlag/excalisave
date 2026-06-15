@@ -19,6 +19,13 @@ export enum MessageType {
   REMOVE_SYNC_PROVIDER = "REMOVE_SYNC_PROVIDER",
   GET_SYNC_CONFIG = "GET_SYNC_CONFIG",
   CHECK_SYNC_AUTH = "CHECK_SYNC_AUTH",
+  // Sync resilience / console
+  RESET_SYNC_HEALTH = "RESET_SYNC_HEALTH",
+  GET_SYNC_HEALTH = "GET_SYNC_HEALTH",
+  GET_SYNC_LOG = "GET_SYNC_LOG",
+  CLEAR_SYNC_LOG = "CLEAR_SYNC_LOG",
+  SYNC_FLUSH = "SYNC_FLUSH",
+  SET_SYNC_DEBOUNCE = "SET_SYNC_DEBOUNCE",
 }
 
 export type SaveNewDrawingMessage = {
@@ -119,5 +126,12 @@ export type ConfigureSyncProviderMessage = {
   payload: {
     config: AnySyncProviderConfig;
     drawingsToSync: string[];
+  };
+};
+
+export type SetSyncDebounceMessage = {
+  type: MessageType.SET_SYNC_DEBOUNCE;
+  payload: {
+    debounceMs: number;
   };
 };

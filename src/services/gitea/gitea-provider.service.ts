@@ -8,7 +8,11 @@ import type {
   GiteaSyncConfig,
   AnySyncConfig,
 } from "../../interfaces/sync-config.interface";
-import { encodeBase64, createAuthedFetch, repoFilePath } from "../git/shared";
+import {
+  encodeBase64,
+  createAuthedFetch,
+  repoFilePath,
+} from "../git/shared";
 
 function normalizeToGiteaConfig(
   input: GiteaSyncConfig | AnySyncConfig
@@ -32,16 +36,22 @@ export class GiteaProvider implements SyncProvider {
   private config: GiteaSyncConfig | null = null;
   private authedFetch: ReturnType<typeof createAuthedFetch> | null = null;
 
-  constructor(initialConfig?: GiteaSyncConfig | AnySyncConfig) {
+  constructor(
+    initialConfig?: GiteaSyncConfig | AnySyncConfig,
+    deviceName?: string
+  ) {
     if (initialConfig) {
-      this.setConfig(initialConfig);
+      this.setConfig(initialConfig, deviceName);
     }
   }
 
-  public setConfig(config: GiteaSyncConfig | AnySyncConfig): void {
+  public setConfig(
+    config: GiteaSyncConfig | AnySyncConfig,
+    deviceName?: string
+  ): void {
     const gt = normalizeToGiteaConfig(config);
     this.config = gt;
-    this.authedFetch = createAuthedFetch(gt.token);
+    this.authedFetch = createAuthedFetch(gt.token, deviceName);
   }
 
   public async getConfig(): Promise<GiteaSyncConfig | null> {

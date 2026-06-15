@@ -448,6 +448,14 @@ const Popup: React.FC = () => {
             onAddToFolder={addDrawingToFolder}
             onRemoveFromFolder={removeDrawingFromFolder}
             onToggleSync={handleToggleSync}
+            onRetrySync={async (id: string) => {
+              try {
+                await browser.runtime.sendMessage({
+                  type: MessageType.SYNC_DRAWING,
+                  payload: { id },
+                } as SyncDrawingMessage);
+              } catch {}
+            }}
           />
         ))}
       </Grid>

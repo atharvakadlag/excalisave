@@ -8,6 +8,7 @@ export interface BaseSyncConfig {
   repo: string;
   branch: string;
   baseUrl?: string;
+  debounceMs?: number; // 0..600000 ms, default 10000
 }
 
 export interface GitHubSyncConfig extends BaseSyncConfig {

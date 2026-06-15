@@ -50,6 +50,13 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
   const [selectedDrawings, setSelectedDrawings] = useState<string[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
+  // Resilience / console state
+  const [debounceMs, setDebounceMs] = useState<number>(10000);
+  const [health, setHealth] = useState<any>(null);
+  const [syncLog, setSyncLog] = useState<any[]>([]);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(false);
+  const [isLoadingLog, setIsLoadingLog] = useState(false);
+
   useEffect(() => {
     const loadExistingConfig = async () => {
       try {
@@ -94,6 +101,13 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
           if (c.token && (c.owner || c.repoOwner) && (c.repo || c.repoName)) {
             loadCommitHistory();
           }
+
+          // Load debounce from config (default 10s)
+          const d = typeof c.debounceMs === "number" ? c.debounceMs : 10000;
+          setDebounceMs(d);
+
+          // Load health + log for console
+          loadHealthAndLog();
         }
 
         // Load drawings
@@ -142,6 +156,57 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
     }
   };
 
+  const loadHealthAndLog = async () => {
+    try {
+      setIsLoadingHealth(true);
+      setIsLoadingLog(true);
+
+      const [h, l] = await Promise.all([
+        browser.runtime.sendMessage({ type: MessageType.GET_SYNC_HEALTH }),
+        browser.runtime.sendMessage({ type: MessageType.GET_SYNC_LOG }),
+      ]);
+
+      if (h && h.success && h.health) setHealth(h.health);
+      if (l && l.success && Array.isArray(l.log)) setSyncLog(l.log);
+    } catch {
+      // non-fatal for console
+    } finally {
+      setIsLoadingHealth(false);
+      setIsLoadingLog(false);
+    }
+  };
+
+  const handleResetHealth = async () => {
+    try {
+      await browser.runtime.sendMessage({
+        type: MessageType.RESET_SYNC_HEALTH,
+      });
+      await loadHealthAndLog();
+    } catch {}
+  };
+
+  const handleClearLog = async () => {
+    try {
+      await browser.runtime.sendMessage({ type: MessageType.CLEAR_SYNC_LOG });
+      setSyncLog([]);
+    } catch {}
+  };
+
+  const handleRefreshLog = async () => {
+    await loadHealthAndLog();
+  };
+
+  const handleApplyDebounce = async (ms: number) => {
+    const clamped = Math.max(0, Math.min(600000, Math.floor(ms)));
+    try {
+      await browser.runtime.sendMessage({
+        type: MessageType.SET_SYNC_DEBOUNCE,
+        payload: { debounceMs: clamped },
+      });
+      setDebounceMs(clamped);
+    } catch {}
+  };
+
   const handleRemoveSync = async () => {
     try {
       setError("");
@@ -187,6 +252,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
         repo,
         branch: branch || "main",
         baseUrl: providerKind === "gitea" ? baseUrl || undefined : undefined,
+        debounceMs,
       };
 
       // Request host permission for custom gitea/forgejo baseUrl (arbitrary self-hosted)
@@ -520,6 +586,46 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                   </Text>
                 </Box>
 
+                {/* Debounce (0..600 seconds) */}
+                <Box>
+                  <Text as="label" size="2" mb="1">
+                    Debounce (seconds)
+                  </Text>
+                  <Flex gap="2" align="center">
+                    <TextField.Root>
+                      <TextField.Input
+                        type="number"
+                        min={0}
+                        max={600}
+                        step={1}
+                        value={Math.floor(debounceMs / 1000)}
+                        onChange={(e) => {
+                          const secs = Math.max(
+                            0,
+                            Math.min(
+                              600,
+                              Math.floor(Number(e.target.value) || 0)
+                            )
+                          );
+                          setDebounceMs(secs * 1000);
+                        }}
+                        disabled={isLoading}
+                        style={{ width: 120 }}
+                      />
+                    </TextField.Root>
+                    <Button
+                      variant="soft"
+                      onClick={() => handleApplyDebounce(debounceMs)}
+                      disabled={isLoading}
+                    >
+                      Apply
+                    </Button>
+                    <Text size="1" color="gray">
+                      0 disables. Default 10s. Max 600s.
+                    </Text>
+                  </Flex>
+                </Box>
+
                 {/* Base URL (only for gitea) */}
                 {providerKind === "gitea" && (
                   <Box>
@@ -597,6 +703,140 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                     disabled={drawings.length === 0}
                   />
                 </Flex>
+              </Flex>
+            </Card>
+
+            <Card size="3" className="sync-settings-card">
+              <Heading as="h3" size="5" mb="2">
+                Sync Console
+              </Heading>
+              <Text size="2" as="p" color="gray" mb="3">
+                Local sync activity, health, and controls. Debounce and circuit
+                breaker prevent hammering on errors or offline.
+              </Text>
+
+              <Flex direction="column" gap="3">
+                <Flex align="center" gap="2" wrap="wrap">
+                  <Text size="2" weight="medium">
+                    Health:
+                  </Text>
+                  <Badge
+                    color={
+                      !health
+                        ? "gray"
+                        : health.state === "closed"
+                        ? "green"
+                        : health.state === "half-open"
+                        ? "amber"
+                        : "red"
+                    }
+                  >
+                    {health
+                      ? `${health.state} (failures=${health.failures || 0})`
+                      : isLoadingHealth
+                      ? "loading..."
+                      : "unknown"}
+                  </Badge>
+                  {health && health.lastError && (
+                    <Text size="1" color="gray" title={health.lastError}>
+                      last: {String(health.lastError).slice(0, 60)}
+                    </Text>
+                  )}
+                </Flex>
+
+                <Flex gap="2" wrap="wrap">
+                  <Button
+                    variant="soft"
+                    onClick={handleResetHealth}
+                    disabled={isLoading}
+                  >
+                    Reset health
+                  </Button>
+                  <Button
+                    variant="soft"
+                    onClick={async () => {
+                      try {
+                        await browser.runtime.sendMessage({
+                          type: MessageType.SYNC_FLUSH,
+                        });
+                      } catch {}
+                      await loadHealthAndLog();
+                    }}
+                    disabled={isLoading}
+                  >
+                    Flush now
+                  </Button>
+                  <Button
+                    variant="soft"
+                    onClick={handleClearLog}
+                    disabled={isLoading}
+                  >
+                    Clear log
+                  </Button>
+                  <Button
+                    variant="soft"
+                    onClick={handleRefreshLog}
+                    disabled={isLoading}
+                  >
+                    Refresh
+                  </Button>
+                </Flex>
+
+                {isLoadingLog ? (
+                  <Text size="2" color="gray">
+                    Loading console...
+                  </Text>
+                ) : syncLog.length === 0 ? (
+                  <Card variant="surface">
+                    <Text size="2" color="gray">
+                      No sync events yet.
+                    </Text>
+                  </Card>
+                ) : (
+                  <ScrollArea className="sync-history-scroll">
+                    <Flex direction="column" gap="2">
+                      {syncLog
+                        .slice()
+                        .reverse()
+                        .map((e, idx) => (
+                          <Card key={idx} size="1" variant="surface">
+                            <Flex direction="column" gap="1">
+                              <Flex justify="between" align="center" gap="2">
+                                <Text
+                                  size="1"
+                                  color="gray"
+                                  style={{ whiteSpace: "nowrap" }}
+                                >
+                                  {new Date(e.ts).toISOString()}
+                                </Text>
+                                <Badge
+                                  color={
+                                    e.level === "error"
+                                      ? "red"
+                                      : e.level === "warn"
+                                      ? "amber"
+                                      : "gray"
+                                  }
+                                >
+                                  {e.level}
+                                </Badge>
+                              </Flex>
+                              <Text size="2">{e.message}</Text>
+                              {e.detail && (
+                                <Text
+                                  size="1"
+                                  color="gray"
+                                  style={{ whiteSpace: "pre-wrap" }}
+                                >
+                                  {String(e.detail).slice(0, 800)}
+                                </Text>
+                              )}
+                            </Flex>
+                          </Card>
+                        ))}
+                    </Flex>
+                  </ScrollArea>
+                )}
               </Flex>
             </Card>
 

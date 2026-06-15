@@ -52,19 +52,21 @@ export class GitHubProvider implements SyncProvider {
   private authedFetch: ReturnType<typeof createAuthedFetch> | null = null;
 
   constructor(
-    initialConfig?: GitHubSyncConfig | AnySyncConfig | LegacyGitHubConfig
+    initialConfig?: GitHubSyncConfig | AnySyncConfig | LegacyGitHubConfig,
+    deviceName?: string
   ) {
     if (initialConfig) {
-      this.setConfig(initialConfig);
+      this.setConfig(initialConfig, deviceName);
     }
   }
 
   public setConfig(
-    config: GitHubSyncConfig | AnySyncConfig | LegacyGitHubConfig
+    config: GitHubSyncConfig | AnySyncConfig | LegacyGitHubConfig,
+    deviceName?: string
   ): void {
     const gh = normalizeToGitHubConfig(config);
     this.config = gh;
-    this.authedFetch = createAuthedFetch(gh.token);
+    this.authedFetch = createAuthedFetch(gh.token, deviceName);
   }
 
   public async getConfig(): Promise<GitHubSyncConfig | null> {

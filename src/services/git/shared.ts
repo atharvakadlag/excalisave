@@ -13,10 +13,33 @@ export function encodeBase64(str: string): string {
 }
 
 /**
+ * Derive a compact device identifier for headers and last-sync attribution.
+ * This value is sent as X-Device-Name on authenticated git requests.
+ */
+export function getDeviceHeaderValue(): string {
+  try {
+    const ua =
+      (typeof navigator !== "undefined" && (navigator as any).userAgent) ||
+      "unknown";
+    const lang =
+      (typeof navigator !== "undefined" && navigator.language) || "en";
+    const base = `${ua.split(" ")[0] || "client"} (${lang})`;
+    return base.slice(0, 120);
+  } catch {
+    return "excalisave-client";
+  }
+}
+
+/**
  * Create an authenticated fetch for git providers.
  * token is sent as Authorization: token <token>
+ * Also sends X-Device-Name so that last-sync attribution can be based on the header value.
  */
-export function createAuthedFetch(token: string) {
+export function createAuthedFetch(token: string, deviceName?: string) {
+  const dev =
+    deviceName && deviceName.trim()
+      ? deviceName.trim().slice(0, 120)
+      : getDeviceHeaderValue();
   return (url: string, init?: RequestInit) => {
     const headers = new Headers(init?.headers || {});
     headers.set("Authorization", `token ${token}`);
@@ -24,6 +47,7 @@ export function createAuthedFetch(token: string) {
     if (!headers.has("Accept")) {
       headers.set("Accept", "application/json");
     }
+    headers.set("X-Device-Name", dev);
     return fetch(url, { ...init, headers });
   };
 }

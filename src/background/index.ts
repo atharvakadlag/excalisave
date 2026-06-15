@@ -8,6 +8,7 @@ import {
   SaveDrawingMessage,
   SaveNewDrawingMessage,
 } from "../constants/message.types";
+import { getDeviceHeaderValue } from "../services/git/shared";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { XLogger } from "../lib/logger";
 import { TabUtils } from "../lib/utils/tab.utils";
@@ -56,6 +57,7 @@ browser.runtime.onMessage.addListener(
 
         case MessageType.SAVE_NEW_DRAWING:
           await syncConfigService.ensureProvider();
+          await syncService.autoFlushIfReconnected();
           const drawing: IDrawing = {
             id: message.payload.id,
             name: message.payload.name,
@@ -77,6 +79,7 @@ browser.runtime.onMessage.addListener(
 
         case MessageType.SAVE_DRAWING:
           await syncConfigService.ensureProvider();
+          await syncService.autoFlushIfReconnected();
           const exitentDrawing = (
             await browser.storage.local.get(message.payload.id)
           )[message.payload.id] as IDrawing;
@@ -112,6 +115,7 @@ browser.runtime.onMessage.addListener(
 
         case MessageType.SYNC_DRAWING:
           await syncConfigService.ensureProvider();
+          await syncService.autoFlushIfReconnected();
           const drawingToSync = (
             await browser.storage.local.get(message.payload.id)
           )[message.payload.id] as IDrawing;
@@ -126,6 +130,9 @@ browser.runtime.onMessage.addListener(
 
         case MessageType.DELETE_DRAWING:
           XLogger.info("Deleting drawing", message.payload.id);
+
+          await syncConfigService.ensureProvider();
+          await syncService.autoFlushIfReconnected();
 
           const drawingToDelete = (
             await browser.storage.local.get(message.payload.id)
@@ -206,6 +213,11 @@ browser.runtime.onMessage.addListener(
           return { success: true };
 
         case MessageType.CONFIGURE_SYNC_PROVIDER:
+          // Persist device name derived from header for attribution
+          try {
+            const dev = getDeviceHeaderValue();
+            await browser.storage.local.set({ syncDeviceName: dev });
+          } catch {}
           return await syncConfigService.configureSyncProvider(
             message.payload.config,
             message.payload.drawingsToSync
@@ -240,6 +252,48 @@ browser.runtime.onMessage.addListener(
             success: true,
             commits: changeHistory,
           };
+
+        case MessageType.RESET_SYNC_HEALTH:
+          await syncConfigService.ensureProvider();
+          await syncService.resetHealth();
+          return { success: true };
+
+        case MessageType.GET_SYNC_HEALTH:
+          await syncConfigService.ensureProvider();
+          const health = await syncService.getHealth();
+          return { success: true, health };
+
+        case MessageType.GET_SYNC_LOG:
+          await syncConfigService.ensureProvider();
+          const log = await syncService.getRecentLog();
+          return { success: true, log };
+
+        case MessageType.CLEAR_SYNC_LOG:
+          await syncConfigService.ensureProvider();
+          await syncService.clearLog();
+          return { success: true };
+
+        case MessageType.SYNC_FLUSH:
+          await syncConfigService.ensureProvider();
+          // Gentle nudge: try to pull latest and let per-drawing saves push on demand
+          await syncService.syncFiles();
+          return { success: true };
+
+        case MessageType.SET_SYNC_DEBOUNCE:
+          const ms = Math.max(
+            0,
+            Math.min(600000, Math.floor(message.payload?.debounceMs || 0))
+          );
+          syncService.setDebounceMs(ms);
+          try {
+            const cur = await browser.storage.local.get("syncConfig");
+            if (cur && cur.syncConfig) {
+              await browser.storage.local.set({
+                syncConfig: { ...cur.syncConfig, debounceMs: ms },
+              });
+            }
+          } catch {}
+          return { success: true };
 
         default:
           XLogger.warn("Unknown message type received in background", message);

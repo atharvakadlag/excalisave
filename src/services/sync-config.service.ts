@@ -7,6 +7,7 @@ import type {
   LegacyGitHubConfig,
 } from "../interfaces/sync-config.interface";
 import type { SyncProvider } from "../interfaces/sync.interface";
+import { getDeviceHeaderValue } from "./git/shared";
 
 const SYNC_CONFIG_KEY = "syncConfig";
 const LEGACY_GITHUB_KEY = "githubConfig";
@@ -59,9 +60,20 @@ export class SyncConfigService {
     drawingsToSync?: string[]
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      // Persist debounce if provided
+      if (typeof (config as any).debounceMs === "number") {
+        const clamped = Math.max(
+          0,
+          Math.min(600000, Math.floor((config as any).debounceMs))
+        );
+        (config as any).debounceMs = clamped;
+        this.syncService.setDebounceMs(clamped);
+      }
+
       await browser.storage.local.set({ [SYNC_CONFIG_KEY]: config });
 
-      const provider = createSyncProvider(config);
+      const device = getDeviceHeaderValue();
+      const provider = createSyncProvider(config, device);
       this.syncService.setProvider(provider);
       await this.syncService.initialize(drawingsToSync || []);
 
@@ -171,7 +183,12 @@ export class SyncConfigService {
     const res = await this.getSyncConfig();
     if (res.success && res.config) {
       try {
-        const provider = createSyncProvider(res.config);
+        const cfg: any = res.config;
+        if (typeof cfg.debounceMs === "number") {
+          this.syncService.setDebounceMs(cfg.debounceMs);
+        }
+        const device = getDeviceHeaderValue();
+        const provider = createSyncProvider(cfg, device);
         this.syncService.setProvider(provider);
       } catch (e) {
         XLogger.error("Failed to hydrate sync provider from config", e);
