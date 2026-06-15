@@ -118,41 +118,45 @@ export function Drawing(props: DrawingProps) {
           </span>
         )}
 
-        <Flex justify="between" align="center" pr="1" pl="1">
-          <Text
-            style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              maxWidth: "140px",
-            }}
-            title={props.drawing.name}
-            color="gray"
-            as="p"
-            size="1"
-            weight="medium"
-          >
-            {props.drawing.name}
-          </Text>
-          {props.drawing.sync && props.drawing.lastSyncAt && (
-            <Text
-              size="1"
-              color="gray"
-              style={{ marginLeft: 6, whiteSpace: "nowrap" }}
-              title={`Last sync (absolute): ${
-                props.drawing.lastSyncAt
-              }\nRelative: ${dayjs(props.drawing.lastSyncAt).fromNow()}`}
-            >
-              {dayjs(props.drawing.lastSyncAt).fromNow()}
-            </Text>
-          )}
-          {props.favorite === true && (
-            <HeartFilledIcon
-              className="Drawing__favorite"
-              width={"16"}
-              height={"16"}
-            />
-          )}
+        <Flex justify="between" align="start" pr="1" pl="1">
+          <Flex align="start" gap="1">
+            <Flex direction="column" style={{ maxWidth: 140 }}>
+              <Text
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  maxWidth: "140px",
+                }}
+                title={props.drawing.name}
+                color="gray"
+                as="p"
+                size="1"
+                weight="medium"
+              >
+                {props.drawing.name}
+              </Text>
+              {props.drawing.sync && props.drawing.lastSyncAt && (
+                <Text
+                  size="1"
+                  color="gray"
+                  style={{ fontStyle: "italic", whiteSpace: "nowrap" }}
+                  title={`Last sync (absolute): ${
+                    props.drawing.lastSyncAt
+                  }\nRelative: ${dayjs(props.drawing.lastSyncAt).fromNow()}`}
+                >
+                  {dayjs(props.drawing.lastSyncAt).fromNow()}
+                </Text>
+              )}
+            </Flex>
+            {props.favorite === true && (
+              <HeartFilledIcon
+                className="Drawing__favorite"
+                width={"16"}
+                height={"16"}
+              />
+            )}
+          </Flex>
 
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>

@@ -8,11 +8,7 @@ import type {
   GiteaSyncConfig,
   AnySyncConfig,
 } from "../../interfaces/sync-config.interface";
-import {
-  encodeBase64,
-  createAuthedFetch,
-  repoFilePath,
-} from "../git/shared";
+import { encodeBase64, createAuthedFetch, repoFilePath } from "../git/shared";
 
 function normalizeToGiteaConfig(
   input: GiteaSyncConfig | AnySyncConfig

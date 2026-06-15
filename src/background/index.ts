@@ -52,6 +52,10 @@ browser.runtime.onMessage.addListener(
 
       switch (message.type) {
         case "OpenPopup":
+          // The in-page Excalisave button (next to diagram name) creates its own
+          // positioned iframe overlay directly in the content script so it can
+          // appear right under the triggering button. No new window is used.
+          // The toolbar action icon uses the native popup.
           browser.action.openPopup();
           return { success: true };
 
