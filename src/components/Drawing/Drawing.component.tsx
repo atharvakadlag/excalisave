@@ -143,10 +143,7 @@ export function Drawing(props: DrawingProps) {
                 props.drawing.lastSyncAt
               }\nRelative: ${dayjs(props.drawing.lastSyncAt).fromNow()}`}
             >
-              {new Date(props.drawing.lastSyncAt)
-                .toISOString()
-                .replace("T", " ")
-                .replace("Z", "")}
+              {dayjs(props.drawing.lastSyncAt).fromNow()}
             </Text>
           )}
           {props.favorite === true && (
