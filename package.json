@@ -5,9 +5,19 @@
   "private": true,
   "repository": "https://github.com/atharvakadlag/excalisave.git",
   "license": "MIT",
+  "packageManager": "yarn@4.16.0",
   "engines": {
     "node": ">=20.0.0",
-    "yarn": ">= 1.22.0"
+    "yarn": ">=4.0.0"
+  },
+  "resolutions": {
+    "eslint": "^8.52.0",
+    "@typescript-eslint/eslint-plugin": "^6.9.1",
+    "@typescript-eslint/parser": "^6.9.1",
+    "prettier": "^3.0.3",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "@types/react": "^17.0.6"
   },
   "scripts": {
     "dev:chrome": "cross-env NODE_ENV=development cross-env TARGET_BROWSER=chrome cross-env webpack --watch --config webpack.config.dev.js",
@@ -42,11 +52,7 @@
     "webextension-polyfill-ts": "^0.26.0"
   },
   "devDependencies": {
-    "@abhijithvijayan/eslint-config": "2.6.3",
-    "@abhijithvijayan/eslint-config-airbnb": "^1.0.2",
-    "@abhijithvijayan/tsconfig": "^1.3.0",
     "@babel/core": "^7.14.3",
-    "@babel/eslint-parser": "^7.12.16",
     "@babel/plugin-proposal-class-properties": "^7.13.0",
     "@babel/plugin-proposal-object-rest-spread": "^7.14.2",
     "@babel/plugin-transform-destructuring": "^7.13.17",
@@ -57,6 +63,7 @@
     "@excalidraw/excalidraw": "0.16.1",
     "@types/file-saver": "^2.0.7",
     "@types/jest": "^29.5.7",
+    "@types/node": "^20",
     "@types/react": "^17.0.6",
     "@types/react-dom": "^17.0.5",
     "@types/webpack": "^5.28.4",
@@ -64,6 +71,7 @@
     "@typescript-eslint/parser": "^6.9.1",
     "autoprefixer": "^10.4.16",
     "babel-loader": "^9.1.3",
+    "browser-fs-access": "^0.35.0",
     "clean-webpack-plugin": "^4.0.0",
     "copy-webpack-plugin": "^11.0.0",
     "cross-env": "^7.0.3",
@@ -71,12 +79,11 @@
     "css-minimizer-webpack-plugin": "^5.0.1",
     "eslint": "^8.52.0",
     "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-import": "^2.23.3",
-    "eslint-plugin-jsx-a11y": "^6.4.1",
-    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-prettier": "^5.0.1",
-    "eslint-plugin-react": "^7.23.2",
-    "eslint-plugin-react-hooks": "^4.2.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "filemanager-webpack-plugin": "^8.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.0",
     "html-webpack-plugin": "^5.5.3",
@@ -88,6 +95,7 @@
     "postcss-loader": "^7.3.3",
     "prettier": "^3.0.3",
     "resolve-url-loader": "^5.0.0",
+    "roughjs": "^4.6.6",
     "sass": "^1.69.5",
     "sass-loader": "^13.3.2",
     "terser-webpack-plugin": "^5.3.9",

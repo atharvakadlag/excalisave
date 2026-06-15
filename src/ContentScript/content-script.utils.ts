@@ -63,7 +63,7 @@ async function takeScreenshot({
     .filter((item): item is ExcalidrawImageElement => item.type === "image")
     .map((item) => item.fileId);
 
-  let files: BinaryFiles = {};
+  const files: BinaryFiles = {};
 
   try {
     const response = await getMany<BinaryFileData | undefined>(

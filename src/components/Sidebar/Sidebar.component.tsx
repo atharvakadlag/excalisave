@@ -4,7 +4,6 @@ import {
   HeartIcon,
   ListBulletIcon,
   MagnifyingGlassIcon,
-  PlusCircledIcon,
 } from "@radix-ui/react-icons";
 import { Box, Flex, Separator, Text } from "@radix-ui/themes";
 import { clsx } from "clsx";

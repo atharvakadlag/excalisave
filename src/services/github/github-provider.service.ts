@@ -3,89 +3,117 @@ import {
   ChangeHistoryItem,
 } from "../../interfaces/sync.interface";
 import { IDrawing } from "../../interfaces/drawing.interface";
-import { browser } from "webextension-polyfill-ts";
 import { XLogger } from "../../lib/logger";
+import type {
+  GitHubSyncConfig,
+  AnySyncConfig,
+  LegacyGitHubConfig,
+} from "../../interfaces/sync-config.interface";
+import { encodeBase64, createAuthedFetch, repoFilePath } from "../git/shared";
 
-interface GitHubConfig {
-  token: string;
-  repoOwner: string;
-  repoName: string;
+function isLegacyConfig(c: any): c is LegacyGitHubConfig {
+  return (
+    c &&
+    typeof c.token === "string" &&
+    typeof c.repoOwner === "string" &&
+    typeof c.repoName === "string"
+  );
 }
 
-/**
- * Utility function to encode Unicode strings as base64
- * This handles characters outside the Latin1 range that btoa() can't handle
- */
-function encodeBase64(str: string): string {
-  // Convert the string to a Uint8Array using TextEncoder
-  const encoder = new TextEncoder();
-  const data = encoder.encode(str);
-
-  // Convert the Uint8Array to a base64 string
-  let binary = "";
-  for (let i = 0; i < data.length; i++) {
-    binary += String.fromCharCode(data[i]);
+function normalizeToGitHubConfig(
+  input: GitHubSyncConfig | AnySyncConfig | LegacyGitHubConfig
+): GitHubSyncConfig {
+  if (isLegacyConfig(input)) {
+    return {
+      provider: "github",
+      token: input.token,
+      owner: input.repoOwner,
+      repo: input.repoName,
+      branch: "main",
+    };
   }
-
-  return btoa(binary);
+  const c = input as AnySyncConfig;
+  if (c.provider === "github") {
+    return {
+      provider: "github",
+      nickname: c.nickname,
+      token: c.token,
+      owner: c.owner,
+      repo: c.repo,
+      branch: c.branch || "main",
+    };
+  }
+  // If someone passes a gitea config here, this provider can't use it.
+  throw new Error("GitHubProvider received non-GitHub config");
 }
 
 export class GitHubProvider implements SyncProvider {
-  private config: GitHubConfig | null = null;
+  private config: GitHubSyncConfig | null = null;
+  private authedFetch: ReturnType<typeof createAuthedFetch> | null = null;
 
-  constructor() {
-    this.loadConfig();
-  }
-
-  private async loadConfig() {
-    const config = await browser.storage.local.get("githubConfig");
-    if (config.githubConfig) {
-      this.config = config.githubConfig;
+  constructor(
+    initialConfig?: GitHubSyncConfig | AnySyncConfig | LegacyGitHubConfig
+  ) {
+    if (initialConfig) {
+      this.setConfig(initialConfig);
     }
   }
 
-  public async getConfig(): Promise<GitHubConfig | null> {
-    if (!this.config) {
-      await this.loadConfig();
-    }
+  public setConfig(
+    config: GitHubSyncConfig | AnySyncConfig | LegacyGitHubConfig
+  ): void {
+    const gh = normalizeToGitHubConfig(config);
+    this.config = gh;
+    this.authedFetch = createAuthedFetch(gh.token);
+  }
+
+  public async getConfig(): Promise<GitHubSyncConfig | null> {
     return this.config;
   }
 
   public async removeConfig(): Promise<void> {
-    await browser.storage.local.remove("githubConfig");
+    // Storage is managed by SyncConfigService; provider clears in-memory only
     this.config = null;
+    this.authedFetch = null;
   }
 
-  public async saveConfig(config: GitHubConfig) {
-    await browser.storage.local.set({ githubConfig: config });
-    this.config = config;
+  public async saveConfig(
+    config: GitHubSyncConfig | AnySyncConfig | LegacyGitHubConfig
+  ) {
+    const gh = normalizeToGitHubConfig(config);
+    this.setConfig(gh);
+  }
+
+  private getBase(): string {
+    // GitHub is always api.github.com for this provider
+    return "https://api.github.com";
+  }
+
+  private getBranch(): string {
+    return this.config?.branch || "main";
+  }
+
+  private filePath(id: string): string {
+    return repoFilePath(id);
   }
 
   public async initialize(): Promise<void> {
     if (!this.config) {
       throw new Error("GitHub configuration not set");
     }
-    // Verify the token and repository access
     await this.isAuthenticated();
   }
 
   public async isAuthenticated(): Promise<boolean> {
     XLogger.debug("GitHub provider is authenticated");
-    if (!this.config) return false;
+    if (!this.config || !this.authedFetch) return false;
     XLogger.debug("GitHub with config");
 
     try {
-      const response = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}`,
-        {
-          headers: {
-            Authorization: `token ${this.config.token}`,
-            Accept: "application/vnd.github.v3+json",
-          },
-        }
+      const res = await this.authedFetch(
+        `${this.getBase()}/repos/${this.config.owner}/${this.config.repo}`
       );
-
-      return response.ok;
+      return res.ok;
     } catch (error) {
       XLogger.error("Failed to authenticate with GitHub", error);
       return false;
@@ -93,25 +121,23 @@ export class GitHubProvider implements SyncProvider {
   }
 
   public async saveDrawing(drawing: IDrawing): Promise<boolean> {
-    if (!this.config) return false;
+    if (!this.config || !this.authedFetch) return false;
 
+    const file = this.filePath(drawing.id);
+    const url = `${this.getBase()}/repos/${this.config.owner}/${
+      this.config.repo
+    }/contents/${file}`;
     try {
-      const response = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawing.id}.json`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `token ${this.config.token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: `Save drawing ${drawing.id}`,
-            content: encodeBase64(JSON.stringify(drawing)),
-          }),
-        }
-      );
-
-      return response.ok;
+      const res = await this.authedFetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `Save drawing ${drawing.id}`,
+          content: encodeBase64(JSON.stringify(drawing)),
+          branch: this.getBranch(),
+        }),
+      });
+      return res.ok;
     } catch (error) {
       XLogger.error("Failed to save drawing to GitHub", error);
       return false;
@@ -124,57 +150,42 @@ export class GitHubProvider implements SyncProvider {
     | boolean
     | { conflict: boolean; localDrawing: IDrawing; remoteDrawing: IDrawing }
   > {
-    if (!this.config) return false;
+    if (!this.config || !this.authedFetch) return false;
 
+    const branch = this.getBranch();
+    const file = this.filePath(drawing.id);
+    const getUrl = `${this.getBase()}/repos/${this.config.owner}/${
+      this.config.repo
+    }/contents/${file}?ref=${encodeURIComponent(branch)}`;
+    const putUrl = `${this.getBase()}/repos/${this.config.owner}/${
+      this.config.repo
+    }/contents/${file}`;
     try {
-      // First get the current file to get its SHA
-      const currentFile = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawing.id}.json`,
-        {
-          headers: {
-            Authorization: `token ${this.config.token}`,
-          },
-        }
-      );
+      // Get current file (at branch) to obtain its SHA
+      const currentFileRes = await this.authedFetch(getUrl);
 
-      if (!currentFile.ok) {
+      if (!currentFileRes.ok) {
         return this.saveDrawing(drawing);
       }
 
-      const currentFileData = await currentFile.json();
+      const currentFileData = await currentFileRes.json();
 
-      const response = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawing.id}.json`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `token ${this.config.token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: `Update drawing ${drawing.id}`,
-            content: encodeBase64(JSON.stringify(drawing)),
-            sha: currentFileData.sha,
-          }),
-        }
-      );
+      const putRes = await this.authedFetch(putUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `Update drawing ${drawing.id}`,
+          content: encodeBase64(JSON.stringify(drawing)),
+          sha: currentFileData.sha,
+          branch,
+        }),
+      });
 
-      // Check for 409 Conflict error
-      if (response.status === 409) {
-        // Get the remote drawing data
-        const remoteDrawingResponse = await fetch(
-          `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawing.id}.json`,
-          {
-            headers: {
-              Authorization: `token ${this.config.token}`,
-            },
-          }
-        );
-
-        if (remoteDrawingResponse.ok) {
-          const remoteData = await remoteDrawingResponse.json();
+      if (putRes.status === 409) {
+        const remoteRes = await this.authedFetch(getUrl);
+        if (remoteRes.ok) {
+          const remoteData = await remoteRes.json();
           const remoteContent = JSON.parse(atob(remoteData.content));
-
           return {
             conflict: true,
             localDrawing: drawing,
@@ -183,7 +194,7 @@ export class GitHubProvider implements SyncProvider {
         }
       }
 
-      return response.ok;
+      return putRes.ok;
     } catch (error) {
       XLogger.error("Failed to update drawing on GitHub", error);
       return false;
@@ -191,85 +202,74 @@ export class GitHubProvider implements SyncProvider {
   }
 
   public async deleteDrawing(drawing: IDrawing): Promise<boolean> {
-    if (!this.config) return false;
+    if (!this.config || !this.authedFetch) return false;
 
+    const branch = this.getBranch();
+    const file = this.filePath(drawing.id);
     try {
-      // First get the current file to get its SHA
-      const currentFile = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawing.id}.json`,
-        {
-          headers: {
-            Authorization: `token ${this.config.token}`,
-          },
-        }
+      const currentFileRes = await this.authedFetch(
+        `${this.getBase()}/repos/${this.config.owner}/${
+          this.config.repo
+        }/contents/${file}?ref=${encodeURIComponent(branch)}`
       );
 
-      if (!currentFile.ok) {
-        return true; // File doesn't exist, consider it deleted
+      if (!currentFileRes.ok) {
+        return true; // doesn't exist, consider deleted
       }
 
-      const currentFileData = await currentFile.json();
+      const currentFileData = await currentFileRes.json();
 
-      const response = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents/${drawing.id}.json`,
+      const delRes = await this.authedFetch(
+        `${this.getBase()}/repos/${this.config.owner}/${
+          this.config.repo
+        }/contents/${file}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `token ${this.config.token}`,
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: `Delete drawing ${drawing.id}`,
             sha: currentFileData.sha,
+            branch,
           }),
         }
       );
 
-      return response.ok;
+      return delRes.ok;
     } catch (error) {
       XLogger.error("Failed to delete drawing from GitHub", error);
       return false;
     }
   }
 
-  /**
-   * Fetch all drawings from GitHub and return them in IDrawing format
-   */
   public async getAllFiles(): Promise<IDrawing[]> {
-    if (!this.config) {
+    if (!this.config || !this.authedFetch) {
       XLogger.error("GitHub configuration not set");
       return [];
     }
 
+    const branch = this.getBranch();
     try {
-      // Get all files from the repository
-      const response = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${this.config.repoName}/contents`,
-        {
-          headers: {
-            Authorization: `token ${this.config.token}`,
-            Accept: "application/vnd.github.v3+json",
-          },
-        }
+      const listRes = await this.authedFetch(
+        `${this.getBase()}/repos/${this.config.owner}/${
+          this.config.repo
+        }/contents?ref=${encodeURIComponent(branch)}`
       );
 
-      if (!response.ok) {
+      if (!listRes.ok) {
         XLogger.error("Failed to fetch repository contents");
         return [];
       }
 
-      const files = await response.json();
+      const files = await listRes.json();
       const drawings: IDrawing[] = [];
 
-      // Process each JSON file
       for (const file of files) {
         if (file.name.endsWith(".json")) {
           try {
-            const fileResponse = await fetch(file.download_url);
-            if (fileResponse.ok) {
-              const rawData = await fileResponse.json();
-
-              // Convert GitHub data to IDrawing format
+            // Prefer download_url (already points at the ref we listed), fallback to constructing raw
+            const fileRes = await fetch(file.download_url || file.url);
+            if (fileRes.ok) {
+              const rawData = await fileRes.json();
               const drawing: IDrawing = {
                 id: file.name.replace(".json", ""),
                 name: rawData.name || file.name.replace(".json", ""),
@@ -284,7 +284,6 @@ export class GitHubProvider implements SyncProvider {
                   versionDataState: rawData.data?.versionDataState || "",
                 },
               };
-
               drawings.push(drawing);
             }
           } catch (error) {
@@ -301,29 +300,23 @@ export class GitHubProvider implements SyncProvider {
   }
 
   public async getChangeHistory(limit?: number): Promise<ChangeHistoryItem[]> {
-    if (!this.config) return [];
+    if (!this.config || !this.authedFetch) return [];
 
+    const branch = this.getBranch();
     try {
-      const response = await fetch(
-        `https://api.github.com/repos/${this.config.repoOwner}/${
-          this.config.repoName
-        }/commits?per_page=${limit || 10}`,
-        {
-          headers: {
-            Authorization: `token ${this.config.token}`,
-            Accept: "application/vnd.github.v3+json",
-          },
-        }
+      const res = await this.authedFetch(
+        `${this.getBase()}/repos/${this.config.owner}/${
+          this.config.repo
+        }/commits?per_page=${limit || 10}&sha=${encodeURIComponent(branch)}`
       );
 
-      if (!response.ok) {
-        XLogger.error("Failed to fetch commit history", response.status);
+      if (!res.ok) {
+        XLogger.error("Failed to fetch commit history", res.status);
         return [];
       }
 
-      const commits = await response.json();
+      const commits = await res.json();
 
-      // Transform GitHub commits to our ChangeHistoryItem format
       return commits.map((commit: any) => ({
         id: commit.sha,
         message: commit.commit.message,

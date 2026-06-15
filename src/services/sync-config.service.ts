@@ -1,0 +1,181 @@
+import { browser } from "webextension-polyfill-ts";
+import { XLogger } from "../lib/logger";
+import { SyncService } from "./sync.service";
+import { createSyncProvider } from "./sync-provider-factory";
+import type {
+  AnySyncConfig,
+  LegacyGitHubConfig,
+} from "../interfaces/sync-config.interface";
+import type { SyncProvider } from "../interfaces/sync.interface";
+
+const SYNC_CONFIG_KEY = "syncConfig";
+const LEGACY_GITHUB_KEY = "githubConfig";
+
+export class SyncConfigService {
+  private static instance: SyncConfigService;
+  private syncService: SyncService;
+
+  private constructor() {
+    this.syncService = SyncService.getInstance();
+  }
+
+  public static getInstance(): SyncConfigService {
+    if (!SyncConfigService.instance) {
+      SyncConfigService.instance = new SyncConfigService();
+    }
+    return SyncConfigService.instance;
+  }
+
+  private async migrateIfNeeded(): Promise<AnySyncConfig | null> {
+    try {
+      const current = await browser.storage.local.get(SYNC_CONFIG_KEY);
+      if (current[SYNC_CONFIG_KEY]) {
+        return current[SYNC_CONFIG_KEY] as AnySyncConfig;
+      }
+
+      const legacy = await browser.storage.local.get(LEGACY_GITHUB_KEY);
+      if (legacy[LEGACY_GITHUB_KEY]) {
+        const lg = legacy[LEGACY_GITHUB_KEY] as LegacyGitHubConfig;
+        const migrated: AnySyncConfig = {
+          provider: "github",
+          token: lg.token,
+          owner: lg.repoOwner,
+          repo: lg.repoName,
+          branch: "main",
+        };
+        await browser.storage.local.set({ [SYNC_CONFIG_KEY]: migrated });
+        // Optionally leave the legacy key; do not delete to be safe.
+        XLogger.log("Migrated legacy githubConfig to syncConfig");
+        return migrated;
+      }
+    } catch (e) {
+      XLogger.error("Migration error while loading sync config", e);
+    }
+    return null;
+  }
+
+  public async configureSyncProvider(
+    config: AnySyncConfig,
+    drawingsToSync?: string[]
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      await browser.storage.local.set({ [SYNC_CONFIG_KEY]: config });
+
+      const provider = createSyncProvider(config);
+      this.syncService.setProvider(provider);
+      await this.syncService.initialize(drawingsToSync || []);
+
+      return { success: true };
+    } catch (error) {
+      XLogger.error("Failed to configure sync provider", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  public async removeSyncProvider(): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      // If a provider is active, try to delete all currently-synced drawings from remote first
+      const currentProvider: SyncProvider | null =
+        (this.syncService as any).provider || null;
+      if (currentProvider) {
+        try {
+          const storage = await browser.storage.local.get();
+          const synced = (Object.values(storage) as any[]).filter(
+            (v) =>
+              v &&
+              typeof v === "object" &&
+              (v as any).id &&
+              (v as any).sync === true
+          );
+          for (const d of synced) {
+            try {
+              await currentProvider.deleteDrawing(d as any);
+            } catch {
+              // best-effort: ignore per-drawing delete failures
+            }
+          }
+        } catch {
+          // best-effort: ignore remote cleanup failures
+        }
+      }
+
+      await browser.storage.local.remove(SYNC_CONFIG_KEY);
+      // Also clean legacy key if present
+      await browser.storage.local.remove(LEGACY_GITHUB_KEY);
+      this.syncService.setProvider(null);
+      return { success: true };
+    } catch (error) {
+      XLogger.error("Failed to remove sync provider", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  public async getSyncConfig(): Promise<{
+    success: boolean;
+    config?: AnySyncConfig;
+    error?: string;
+  }> {
+    try {
+      // Migration path first
+      const migrated = await this.migrateIfNeeded();
+      if (migrated) {
+        return { success: true, config: migrated };
+      }
+
+      const stored = await browser.storage.local.get(SYNC_CONFIG_KEY);
+      const config = (stored[SYNC_CONFIG_KEY] as AnySyncConfig) || undefined;
+      return { success: true, config };
+    } catch (error) {
+      XLogger.error("Failed to get sync config", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  public async checkSyncAuth(): Promise<{
+    success: boolean;
+    isAuthenticated?: boolean;
+    error?: string;
+  }> {
+    try {
+      const isAuthenticated = await this.syncService.isAuthenticated();
+      return { success: true, isAuthenticated };
+    } catch (error) {
+      XLogger.error("Failed to check sync auth", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Ensure the in-memory provider on SyncService is populated from stored config.
+   * This is needed because MV3 service workers can be suspended; on wake-up the
+   * singletons start with no provider until configure runs again.
+   */
+  public async ensureProvider(): Promise<void> {
+    const s = this.syncService as any;
+    if (s.provider) return;
+    const res = await this.getSyncConfig();
+    if (res.success && res.config) {
+      try {
+        const provider = createSyncProvider(res.config);
+        this.syncService.setProvider(provider);
+      } catch (e) {
+        XLogger.error("Failed to hydrate sync provider from config", e);
+      }
+    }
+  }
+}

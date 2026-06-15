@@ -1,12 +1,36 @@
 {
-  "extends": [
-    "@abhijithvijayan/eslint-config/typescript",
-    "@abhijithvijayan/eslint-config/node",
-    "@abhijithvijayan/eslint-config/react"
-  ],
+  "root": true,
+  "parser": "@typescript-eslint/parser",
   "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module",
     "project": ["./tsconfig.json"],
-    "sourceType": "module"
+    "tsconfigRootDir": ".",
+    "ecmaFeatures": { "jsx": true }
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "react",
+    "react-hooks",
+    "jsx-a11y",
+    "prettier"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:jsx-a11y/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "settings": {
+    "react": { "version": "detect" },
+    "node": { "tryExtensions": [".tsx", ".ts", ".js", ".jsx"] }
+  },
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "webextensions": true
   },
   "rules": {
     "no-console": "off",
@@ -15,22 +39,19 @@
     "jsx-a11y/label-has-associated-control": "off",
     "class-methods-use-this": "off",
     "max-classes-per-file": "off",
-    "node/no-missing-import": "off",
-    "node/no-unpublished-import": "off",
-    "node/no-unsupported-features/es-syntax": [
-      "error",
-      {
-        "ignores": ["modules"]
-      }
-    ],
-    "@typescript-eslint/explicit-module-boundary-types": "off"
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-case-declarations": "off",
+    "@typescript-eslint/no-var-requires": "off",
+    "react/no-unescaped-entities": "off",
+    "no-empty": "off",
+    "react-hooks/rules-of-hooks": "off",
+    "jsx-a11y/alt-text": "warn",
+    "jsx-a11y/click-events-have-key-events": "off",
+    "jsx-a11y/no-noninteractive-element-interactions": "off",
+    "jsx-a11y/no-autofocus": "off",
+    "prefer-const": "off"
   },
-  "env": {
-    "webextensions": true
-  },
-  "settings": {
-    "node": {
-      "tryExtensions": [".tsx"] // append tsx to the list as well
-    }
-  }
+  "ignorePatterns": ["node_modules/", "dist/", "extension/", ".yarn/"]
 }

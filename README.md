@@ -28,11 +28,11 @@ Attempting to recover my mozzila account due to loss of 2FA
 Ensure you have
 
 - [Node.js](https://nodejs.org) 20 or later installed (Suggested: Install via [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm))
-- [Yarn](https://yarnpkg.com) v1 or v2 installed (`npm i -g yarn`)
+- [Yarn](https://yarnpkg.com) 4 installed (via corepack or mise)
 
 Then run the following:
 
-- `yarn install --frozen-lockfile` to install dependencies.
+- `yarn install --immutable` to install dependencies.
 - `yarn run dev:chrome` to start the development server for chrome extension
 - `yarn run dev:firefox` to start the development server for firefox addon
 - `yarn run dev:opera` to start the development server for opera extension
@@ -43,7 +43,7 @@ Then run the following:
 
 ### Install extension for development
 
-- `yarn install --frozen-lockfile` to install dependencies.
+- `yarn install --immutable` to install dependencies.
 - To watch file changes in development
 
   - Chrome

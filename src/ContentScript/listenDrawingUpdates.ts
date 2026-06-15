@@ -10,8 +10,8 @@ const { browser } = require("webextension-polyfill-ts");
 const DESTRUCTION_EVENT = "destruct-my-extension_2_" + browser.runtime.id;
 document.dispatchEvent(new CustomEvent(DESTRUCTION_EVENT));
 
-let timeoutId: number;
-let intervalId: number;
+let timeoutId: number | undefined;
+let intervalId: number | undefined;
 
 document.addEventListener(DESTRUCTION_EVENT, () => {
   try {

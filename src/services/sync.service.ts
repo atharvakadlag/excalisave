@@ -6,6 +6,8 @@ import {
   MessageType,
   ShowMergeConflictMessage,
 } from "../constants/message.types";
+import { createSyncProvider } from "./sync-provider-factory";
+import type { AnySyncConfig } from "../interfaces/sync-config.interface";
 
 export class SyncService {
   private static instance: SyncService;
@@ -82,7 +84,10 @@ export class SyncService {
         XLogger.log("Drawing updated in cloud successfully");
         return { success: true };
       } else {
-        XLogger.error("Failed to update drawing in cloud");
+        XLogger.error("Failed to update drawing in cloud", {
+          id: drawing?.id,
+          name: drawing?.name,
+        });
         return { success: false };
       }
     }
@@ -120,6 +125,26 @@ export class SyncService {
     if (!drawing.sync) return;
     if (!(await this.isAuthenticated())) return;
 
+    await this.provider.deleteDrawing(drawing);
+  }
+
+  /**
+   * Force-delete a drawing from the remote provider (used for "unsync" / toggle off).
+   * Accepts id or full drawing; bypasses the local .sync flag guard.
+   */
+  public async deleteDrawingFromSync(
+    drawingOrId: string | IDrawing
+  ): Promise<void> {
+    let drawing: IDrawing | undefined;
+    if (typeof drawingOrId === "string") {
+      drawing = (await browser.storage.local.get(drawingOrId))[drawingOrId] as
+        | IDrawing
+        | undefined;
+    } else {
+      drawing = drawingOrId;
+    }
+    if (!drawing) return;
+    if (!(await this.isAuthenticated())) return;
     await this.provider.deleteDrawing(drawing);
   }
 
