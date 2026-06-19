@@ -1,9 +1,20 @@
 .Excalidraw__title-container {
+  z-index: 3 !important;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Legacy absolute positioning when mounted into the outer container */
+.Excalidraw__title-container:not(.excalisave-in-menu) {
   position: absolute;
   top: var(--editor-container-padding);
   left: 68px;
-  z-index: 3 !important;
-  height: 40px;
-  display: flex;
-  align-items: center;
+}
+
+/* When mounted inside Excalidraw's top menu bar, flow naturally */
+.Excalidraw__title-container.excalisave-in-menu {
+  position: static;
+  margin-left: 8px;
 }

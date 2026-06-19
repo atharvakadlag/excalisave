@@ -1,55 +1,117 @@
-import React from "react";
-import ReactDOM from "react-dom";
+import React, { useRef } from "react";
 import "./DrawingTitle.styles.scss";
 import { useLocalStorageString } from "../../hooks/useLocalStorageString.hook";
 import { DRAWING_TITLE_KEY_LS } from "../../../lib/constants";
 import { browser } from "webextension-polyfill-ts";
-import Popup from "../../../Popup/Popup.component";
 
 export function DrawingTitle() {
   const title = useLocalStorageString(DRAWING_TITLE_KEY_LS, "");
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   return (
     <>
-      <h1
-        style={{
-          margin: "0",
-          fontSize: "1.15rem",
-          userSelect: "text",
-        }}
-      >
-        {title}
-      </h1>
+      {title ? (
+        <h1
+          style={{
+            margin: "0",
+            fontSize: "1.15rem",
+            userSelect: "text",
+          }}
+        >
+          {title}
+        </h1>
+      ) : null}
       <button
+        ref={buttonRef}
         className="excalidraw-button collab-button excalisave-button"
         style={{
           width: "auto",
           marginLeft: "8px",
+          // Defensive visible styles so the button shows even if Excalidraw
+          // toolbar classes don't fully apply in the mount location.
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "4px 10px",
+          fontSize: "12px",
+          lineHeight: 1,
+          borderRadius: "4px",
+          border: "1px solid var(--button-border, #d0d0d0)",
+          background: "var(--button-bg, #f4f4f4)",
+          color: "var(--button-color, inherit)",
+          cursor: "pointer",
         }}
         title="Open Excalisave"
-        onClick={async (e) => {
-          // Toggle: if our visible host or backdrop exists, treat as close.
-          const existingHost = document.querySelector(
-            ".excalisave-popup-host"
-          ) as HTMLElement | null;
-          const existingBackdrop = document.querySelector(
-            ".excalisave-popup-overlay"
-          ) as HTMLElement | null;
-          if (existingHost || existingBackdrop) {
-            if (existingHost && existingHost.parentNode)
-              existingHost.parentNode.removeChild(existingHost);
-            if (existingBackdrop && existingBackdrop.parentNode)
-              existingBackdrop.parentNode.removeChild(existingBackdrop);
-            document
-              .querySelectorAll<HTMLIFrameElement>(
-                'iframe[data-excalisave-popup="1"]'
-              )
-              .forEach((f) => f.parentNode && f.parentNode.removeChild(f));
-            return;
-          }
+        onClick={() => {
+          // Capture geometry *synchronously* using only the ref and/or DOM query.
+          // Do NOT use the React synthetic event (ev.currentTarget) for getBoundingClientRect.
+          // After awaits (or in some content-script + React setups) it can be null,
+          // and `null.getBoundingClientRect` is the error you saw.
+          const getBtn = () =>
+            buttonRef.current ||
+            document.querySelector<HTMLButtonElement>(".excalisave-button");
 
-          const btn = e.currentTarget as HTMLElement;
-          const r = btn.getBoundingClientRect();
+          const btnAtClick = getBtn();
+          let initialRect: DOMRect | null = null;
+          try {
+            if (btnAtClick && typeof btnAtClick.getBoundingClientRect === "function") {
+              initialRect = btnAtClick.getBoundingClientRect();
+            }
+          } catch {}
+
+          (async () => {
+            // Respect user preference for menu placement.
+            let placement: "floating" | "inline" = "floating";
+            try {
+              const res = await browser.storage.local.get(
+                "excalisave_menu_placement"
+              );
+              const v = (res as any)?.excalisave_menu_placement;
+              if (v === "floating" || v === "inline") placement = v;
+            } catch {}
+
+            if (placement === "floating") {
+              try {
+                await browser.runtime.sendMessage({ type: "OpenPopup" });
+              } catch {}
+              return;
+            }
+
+            // Toggle close if already open
+            const existingHost = document.querySelector(
+              ".excalisave-popup-host"
+            ) as HTMLElement | null;
+            const existingBackdrop = document.querySelector(
+              ".excalisave-popup-overlay"
+            ) as HTMLElement | null;
+            if (existingHost || existingBackdrop) {
+              if (existingHost && existingHost.parentNode)
+                existingHost.parentNode.removeChild(existingHost);
+              if (existingBackdrop && existingBackdrop.parentNode)
+                existingBackdrop.parentNode.removeChild(existingBackdrop);
+              document
+                .querySelectorAll<HTMLIFrameElement>(
+                  'iframe[data-excalisave-popup="1"]'
+                )
+                .forEach((f) => f.parentNode && f.parentNode.removeChild(f));
+              return;
+            }
+
+            // Resolve a valid rect for positioning. Prefer a fresh read.
+            let r: DOMRect | null = initialRect;
+            if (!r || typeof r.bottom !== "number" || typeof r.left !== "number") {
+              try {
+                const again = getBtn();
+                if (again && typeof again.getBoundingClientRect === "function") {
+                  r = again.getBoundingClientRect();
+                }
+              } catch {}
+            }
+            if (!r || typeof r.bottom !== "number" || typeof r.left !== "number") {
+              try {
+                await browser.runtime.sendMessage({ type: "OpenPopup" });
+              } catch {}
+              return;
+            }
 
           // Minimum width that guarantees the full top navbar row inside the popup
           // (Search + "Working on" pill + primary "Save" button + caret) is visible
@@ -359,6 +421,7 @@ export function DrawingTitle() {
               } catch {}
             }
           }, 2200);
+          })();
         }}
       >
         Excalisave
