@@ -126,19 +126,18 @@ export const Options: React.FC = () => {
                 variant={menuPlacement === "inline" ? "solid" : "soft"}
                 onClick={() => applyMenuPlacement("inline")}
               >
-                Inline (under button)
+                Inline
               </Button>
               <Button
                 variant={menuPlacement === "floating" ? "solid" : "soft"}
                 onClick={() => applyMenuPlacement("floating")}
               >
-                Floating (old native popup)
+                Floating
               </Button>
             </Flex>
             <Text size="1" color="gray" mt="2" as="p">
               Inline: opens a positioned popup directly under the button (new
-              behavior). Floating: uses the browser’s native popup (pre a21217b
-              behavior).
+              behavior). Floating: uses the browser’s native popup.
             </Text>
           </Box>
         </Container>
