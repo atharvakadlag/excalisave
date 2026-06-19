@@ -1,6 +1,7 @@
 import {
   getDrawingDataState,
   getScriptParams,
+  hasSceneChangedSincePersisted,
 } from "../ContentScript/content-script.utils";
 import {
   MessageType,
@@ -37,6 +38,17 @@ type ScriptParams = {
 
   if (!drawingId) {
     throw new Error("Drawing id not found. Could not send drawing message.");
+  }
+
+  // For explicit "Save" (or Save As), still skip if scene elements are unchanged.
+  // This prevents writes when user hits Save with nothing modified.
+  if (!saveAsNew) {
+    try {
+      const changed = await hasSceneChangedSincePersisted(drawingId);
+      if (!changed) {
+        return; // nothing to do; avoid a no-op save
+      }
+    } catch {}
   }
 
   const drawingDataState = await getDrawingDataState();

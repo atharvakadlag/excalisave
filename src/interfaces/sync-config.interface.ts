@@ -8,7 +8,7 @@ export interface BaseSyncConfig {
   repo: string;
   branch: string;
   baseUrl?: string;
-  debounceMs?: number; // 0..600000 ms, default 10000
+  debounceMs?: number; // 0..600000 ms, default 60000
   autoSync?: boolean; // default true; when false, only explicit "Save" from excalisave menu triggers sync
 }
 

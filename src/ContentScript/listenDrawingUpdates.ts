@@ -31,14 +31,47 @@ browser.runtime.connect().onDisconnect.addListener(function () {
 // -----------  Content Script Cleanup  --------------------
 
 let prevVersionFiles = localStorage.getItem("version-files");
+let lastSceneVersion: number | null = null;
 
 timeoutId = window.setTimeout(() => {
+  // Prime lastSceneVersion so we only auto-save on actual element changes
+  // (ignores selection, zoom, scroll, UI-only updates that may bump version-files)
+  try {
+    const raw = localStorage.getItem("excalidraw") || "[]";
+    const els = JSON.parse(raw);
+    const gsv = (window as any).ExcalidrawLib?.getSceneVersion;
+    if (typeof gsv === "function") {
+      lastSceneVersion = gsv(els);
+    }
+  } catch {}
+
   intervalId = window.setInterval(async () => {
     const currentVersionFiles = localStorage.getItem("version-files");
 
     const currentId = localStorage.getItem(DRAWING_ID_KEY_LS);
     if (currentId && prevVersionFiles !== currentVersionFiles) {
       prevVersionFiles = currentVersionFiles;
+
+      // Lightweight scene version check using Excalidraw's getSceneVersion.
+      // Skip save if elements have not meaningfully changed.
+      let shouldSend = true;
+      try {
+        const rawElements = localStorage.getItem("excalidraw") || "[]";
+        const elements = JSON.parse(rawElements);
+        const gsv = (window as any).ExcalidrawLib?.getSceneVersion;
+        if (typeof gsv === "function") {
+          const ver = gsv(elements);
+          if (lastSceneVersion != null && ver === lastSceneVersion) {
+            shouldSend = false;
+          } else {
+            lastSceneVersion = ver;
+          }
+        }
+      } catch {}
+
+      if (!shouldSend) {
+        return;
+      }
 
       const drawingDataState = await getDrawingDataState();
 

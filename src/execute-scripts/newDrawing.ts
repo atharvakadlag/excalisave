@@ -1,4 +1,7 @@
-import { getDrawingDataState } from "../ContentScript/content-script.utils";
+import {
+  getDrawingDataState,
+  hasSceneChangedSincePersisted,
+} from "../ContentScript/content-script.utils";
 import { MessageType, SaveDrawingMessage } from "../constants/message.types";
 import { DRAWING_ID_KEY_LS, DRAWING_TITLE_KEY_LS } from "../lib/constants";
 import { XLogger } from "../lib/logger";
@@ -9,22 +12,29 @@ const { browser } = require("webextension-polyfill-ts");
   // Save data before load new drawing if there is a current drawing
   const currentDrawingId = localStorage.getItem(DRAWING_ID_KEY_LS);
   if (currentDrawingId) {
-    const drawingDataState = await getDrawingDataState();
+    // Guard: only persist if elements actually changed
+    let shouldSave = true;
+    try {
+      shouldSave = await hasSceneChangedSincePersisted(currentDrawingId);
+    } catch {}
+    if (shouldSave) {
+      const drawingDataState = await getDrawingDataState();
 
-    await browser.runtime.sendMessage(
-      As<SaveDrawingMessage>({
-        type: MessageType.SAVE_DRAWING,
-        payload: {
-          id: currentDrawingId,
-          excalidraw: drawingDataState.excalidraw,
-          excalidrawState: drawingDataState.excalidrawState,
-          versionFiles: drawingDataState.versionFiles,
-          versionDataState: drawingDataState.versionDataState,
-          imageBase64: drawingDataState.imageBase64,
-          viewBackgroundColor: drawingDataState.viewBackgroundColor,
-        },
-      })
-    );
+      await browser.runtime.sendMessage(
+        As<SaveDrawingMessage>({
+          type: MessageType.SAVE_DRAWING,
+          payload: {
+            id: currentDrawingId,
+            excalidraw: drawingDataState.excalidraw,
+            excalidrawState: drawingDataState.excalidrawState,
+            versionFiles: drawingDataState.versionFiles,
+            versionDataState: drawingDataState.versionDataState,
+            imageBase64: drawingDataState.imageBase64,
+            viewBackgroundColor: drawingDataState.viewBackgroundColor,
+          },
+        })
+      );
+    }
 
     localStorage.removeItem(DRAWING_ID_KEY_LS);
     localStorage.removeItem(DRAWING_TITLE_KEY_LS);

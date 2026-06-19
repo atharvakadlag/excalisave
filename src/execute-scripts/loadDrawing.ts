@@ -1,6 +1,7 @@
 import {
   getDrawingDataState,
   getScriptParams,
+  hasSceneChangedSincePersisted,
 } from "../ContentScript/content-script.utils";
 import { MessageType, SaveDrawingMessage } from "../constants/message.types";
 import { IDrawing } from "../interfaces/drawing.interface";
@@ -51,23 +52,31 @@ type ScriptParams = {
   const url = new URL(window.location.href);
 
   if (currentDrawingId) {
-    XLogger.info("Saving current drawing before load new drawing");
-    const drawingDataState = await getDrawingDataState();
+    // Only persist current if the scene elements actually changed since last persisted state.
+    // Avoids saving on navigation-only or selection-only interactions.
+    let shouldSave = true;
+    try {
+      shouldSave = await hasSceneChangedSincePersisted(currentDrawingId);
+    } catch {}
+    if (shouldSave) {
+      XLogger.info("Saving current drawing before load new drawing");
+      const drawingDataState = await getDrawingDataState();
 
-    await browser.runtime.sendMessage(
-      As<SaveDrawingMessage>({
-        type: MessageType.SAVE_DRAWING,
-        payload: {
-          id: currentDrawingId,
-          excalidraw: drawingDataState.excalidraw,
-          excalidrawState: drawingDataState.excalidrawState,
-          versionFiles: drawingDataState.versionFiles,
-          versionDataState: drawingDataState.versionDataState,
-          imageBase64: drawingDataState.imageBase64,
-          viewBackgroundColor: drawingDataState.viewBackgroundColor,
-        },
-      })
-    );
+      await browser.runtime.sendMessage(
+        As<SaveDrawingMessage>({
+          type: MessageType.SAVE_DRAWING,
+          payload: {
+            id: currentDrawingId,
+            excalidraw: drawingDataState.excalidraw,
+            excalidrawState: drawingDataState.excalidrawState,
+            versionFiles: drawingDataState.versionFiles,
+            versionDataState: drawingDataState.versionDataState,
+            imageBase64: drawingDataState.imageBase64,
+            viewBackgroundColor: drawingDataState.viewBackgroundColor,
+          },
+        })
+      );
+    }
   }
 
   // Load new drawing

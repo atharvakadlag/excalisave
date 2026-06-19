@@ -187,3 +187,44 @@ export function getScriptParams<T>(): T {
 
   return params as T;
 }
+
+/**
+ * Compute the current scene version using Excalidraw's getSceneVersion.
+ * Returns null if the lib or elements are unavailable.
+ */
+export function getCurrentSceneVersion(): number | null {
+  try {
+    const gsv = (window as any).ExcalidrawLib?.getSceneVersion;
+    if (typeof gsv === "function") {
+      const elsStr = localStorage.getItem("excalidraw") || "[]";
+      const els = JSON.parse(elsStr);
+      return gsv(els);
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Compare current scene version against the elements stored in a persisted drawing.
+ * Returns true if they differ (or if we cannot determine).
+ */
+export async function hasSceneChangedSincePersisted(
+  drawingId: string
+): Promise<boolean> {
+  const currentVer = getCurrentSceneVersion();
+  if (currentVer == null) return true; // be conservative: send if we can't tell
+
+  try {
+    const { browser } = require("webextension-polyfill-ts");
+    const stored = (await browser.storage.local.get(drawingId))[drawingId] as
+      | { data?: { excalidraw?: string } }
+      | undefined;
+    const raw = stored?.data?.excalidraw || "[]";
+    const gsv = (window as any).ExcalidrawLib?.getSceneVersion;
+    if (typeof gsv === "function") {
+      const storedVer = gsv(JSON.parse(raw));
+      if (storedVer === currentVer) return false;
+    }
+  } catch {}
+  return true;
+}

@@ -51,7 +51,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   // Resilience / console state
-  const [debounceMs, setDebounceMs] = useState<number>(10000);
+  const [debounceMs, setDebounceMs] = useState<number>(60000);
   const [autoSync, setAutoSync] = useState<boolean>(true);
   const [health, setHealth] = useState<any>(null);
   const [syncLog, setSyncLog] = useState<any[]>([]);
@@ -844,13 +844,6 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                           <Card key={idx} size="1" variant="surface">
                             <Flex direction="column" gap="1">
                               <Flex justify="between" align="center" gap="2">
-                                <Text
-                                  size="1"
-                                  color="gray"
-                                  style={{ whiteSpace: "nowrap" }}
-                                >
-                                  {new Date(e.ts).toISOString()}
-                                </Text>
                                 <Badge
                                   color={
                                     e.level === "error"
@@ -862,6 +855,13 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                                 >
                                   {e.level}
                                 </Badge>
+                                <Text
+                                  size="1"
+                                  color="gray"
+                                  style={{ whiteSpace: "nowrap" }}
+                                >
+                                  {formatDate(String(e.ts))}
+                                </Text>
                               </Flex>
                               <Text size="2">{e.message}</Text>
                               {e.detail && (
