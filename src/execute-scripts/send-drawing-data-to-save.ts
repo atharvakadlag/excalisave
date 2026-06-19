@@ -47,6 +47,7 @@ type ScriptParams = {
       id: drawingId,
       name: saveAsNew ? params.name : undefined,
       sync: saveAsNew ? params.sync : undefined,
+      manualSync: true,
       excalidraw: drawingDataState.excalidraw,
       excalidrawState: drawingDataState.excalidrawState,
       versionFiles: drawingDataState.versionFiles,

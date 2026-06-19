@@ -64,10 +64,17 @@ export class SyncConfigService {
       if (typeof (config as any).debounceMs === "number") {
         const clamped = Math.max(
           0,
-          Math.min(600000, Math.floor((config as any).debounceMs))
+          Math.min(3600000, Math.floor((config as any).debounceMs))
         );
         (config as any).debounceMs = clamped;
         this.syncService.setDebounceMs(clamped);
+      }
+      // Persist autoSync if provided (default true)
+      if (typeof (config as any).autoSync === "boolean") {
+        this.syncService.setAutoSync((config as any).autoSync);
+      } else {
+        // default on if not specified
+        this.syncService.setAutoSync(true);
       }
 
       await browser.storage.local.set({ [SYNC_CONFIG_KEY]: config });
@@ -186,6 +193,11 @@ export class SyncConfigService {
         const cfg: any = res.config;
         if (typeof cfg.debounceMs === "number") {
           this.syncService.setDebounceMs(cfg.debounceMs);
+        }
+        if (typeof cfg.autoSync === "boolean") {
+          this.syncService.setAutoSync(cfg.autoSync);
+        } else {
+          this.syncService.setAutoSync(true);
         }
         const device = getDeviceHeaderValue();
         const provider = createSyncProvider(cfg, device);

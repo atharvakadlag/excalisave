@@ -52,6 +52,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
 
   // Resilience / console state
   const [debounceMs, setDebounceMs] = useState<number>(10000);
+  const [autoSync, setAutoSync] = useState<boolean>(true);
   const [health, setHealth] = useState<any>(null);
   const [syncLog, setSyncLog] = useState<any[]>([]);
   const [isLoadingHealth, setIsLoadingHealth] = useState(false);
@@ -105,6 +106,10 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
           // Load debounce from config (default 10s)
           const d = typeof c.debounceMs === "number" ? c.debounceMs : 10000;
           setDebounceMs(d);
+
+          // Load autoSync from config (default true)
+          const as = typeof c.autoSync === "boolean" ? c.autoSync : true;
+          setAutoSync(as);
 
           // Load health + log for console
           loadHealthAndLog();
@@ -207,6 +212,16 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
     } catch {}
   };
 
+  const handleApplyAutoSync = async (enabled: boolean) => {
+    try {
+      await browser.runtime.sendMessage({
+        type: MessageType.SET_SYNC_AUTOSYNC,
+        payload: { autoSync: enabled },
+      });
+      setAutoSync(enabled);
+    } catch {}
+  };
+
   const handleRemoveSync = async () => {
     try {
       setError("");
@@ -253,8 +268,8 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
         branch: branch || "main",
         baseUrl: providerKind === "gitea" ? baseUrl || undefined : undefined,
         debounceMs,
+        autoSync,
       };
-
       // Request host permission for custom gitea/forgejo baseUrl (arbitrary self-hosted)
       if (providerKind === "gitea" && baseUrl) {
         try {
@@ -621,7 +636,34 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       Apply
                     </Button>
                     <Text size="1" color="gray">
-                      0 disables. Default 10s. Max 600s.
+                      0 disables. Default 60s. Max 1hr
+                    </Text>
+                  </Flex>
+                </Box>
+
+                {/* Auto-sync toggle */}
+                <Box>
+                  <Text as="label" size="2" mb="1">
+                    Auto-sync
+                  </Text>
+                  <Flex gap="2" align="center">
+                    <Button
+                      variant={autoSync ? "solid" : "soft"}
+                      onClick={() => handleApplyAutoSync(true)}
+                      disabled={isLoading}
+                    >
+                      Enabled
+                    </Button>
+                    <Button
+                      variant={!autoSync ? "solid" : "soft"}
+                      onClick={() => handleApplyAutoSync(false)}
+                      disabled={isLoading}
+                    >
+                      Disabled
+                    </Button>
+                    <Text size="1" color="gray">
+                      When disabled, sync only on explicit "Save" from
+                      excalisave menu.
                     </Text>
                   </Flex>
                 </Box>

@@ -26,6 +26,7 @@ export enum MessageType {
   CLEAR_SYNC_LOG = "CLEAR_SYNC_LOG",
   SYNC_FLUSH = "SYNC_FLUSH",
   SET_SYNC_DEBOUNCE = "SET_SYNC_DEBOUNCE",
+  SET_SYNC_AUTOSYNC = "SET_SYNC_AUTOSYNC",
 }
 
 export type SaveNewDrawingMessage = {
@@ -34,6 +35,7 @@ export type SaveNewDrawingMessage = {
     id: string;
     name: string;
     sync?: boolean;
+    manualSync?: boolean;
     excalidraw: string;
     excalidrawState: string;
     versionFiles: string;
@@ -49,6 +51,7 @@ export type SaveDrawingMessage = {
     id: string;
     name?: string;
     sync?: boolean;
+    manualSync?: boolean;
     excalidraw: string;
     excalidrawState: string;
     versionFiles: string;
@@ -119,6 +122,8 @@ export type AnySyncProviderConfig = {
   repo: string;
   branch: string;
   baseUrl?: string;
+  debounceMs?: number;
+  autoSync?: boolean;
 };
 
 export type ConfigureSyncProviderMessage = {
@@ -133,5 +138,12 @@ export type SetSyncDebounceMessage = {
   type: MessageType.SET_SYNC_DEBOUNCE;
   payload: {
     debounceMs: number;
+  };
+};
+
+export type SetSyncAutoSyncMessage = {
+  type: MessageType.SET_SYNC_AUTOSYNC;
+  payload: {
+    autoSync: boolean;
   };
 };

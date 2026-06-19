@@ -78,7 +78,10 @@ browser.runtime.onMessage.addListener(
           };
 
           await browser.storage.local.set({ [message.payload.id]: drawing });
-          const saveResult = await syncService.updateDrawing(drawing);
+          if (message.payload.manualSync) (drawing as any).__manualSync = true;
+          const saveResult = await syncService.updateDrawing(drawing, {
+            manual: !!message.payload.manualSync,
+          });
           return { success: saveResult.success };
 
         case MessageType.SAVE_DRAWING:
@@ -114,7 +117,10 @@ browser.runtime.onMessage.addListener(
             [message.payload.id]: newData,
           });
 
-          const updateResult = await syncService.updateDrawing(newData);
+          if (message.payload.manualSync) (newData as any).__manualSync = true;
+          const updateResult = await syncService.updateDrawing(newData, {
+            manual: !!message.payload.manualSync,
+          });
           return { success: updateResult.success };
 
         case MessageType.SYNC_DRAWING:
@@ -129,7 +135,10 @@ browser.runtime.onMessage.addListener(
             return { success: false, error: "No drawing found with id" };
           }
 
-          const syncResult = await syncService.updateDrawing(drawingToSync);
+          (drawingToSync as any).__manualSync = true;
+          const syncResult = await syncService.updateDrawing(drawingToSync, {
+            manual: true,
+          });
           return { success: syncResult.success };
 
         case MessageType.DELETE_DRAWING:
@@ -294,6 +303,19 @@ browser.runtime.onMessage.addListener(
             if (cur && cur.syncConfig) {
               await browser.storage.local.set({
                 syncConfig: { ...cur.syncConfig, debounceMs: ms },
+              });
+            }
+          } catch {}
+          return { success: true };
+
+        case MessageType.SET_SYNC_AUTOSYNC:
+          const as = !!message.payload?.autoSync;
+          syncService.setAutoSync(as);
+          try {
+            const cur = await browser.storage.local.get("syncConfig");
+            if (cur && cur.syncConfig) {
+              await browser.storage.local.set({
+                syncConfig: { ...cur.syncConfig, autoSync: as },
               });
             }
           } catch {}

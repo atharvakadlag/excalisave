@@ -18,7 +18,8 @@ export class SyncService {
   private static instance: SyncService;
   private provider: SyncProvider | null = null;
   private breaker: CircuitBreaker | null = null;
-  private debounceMs = 10000; // default 10s
+  private debounceMs = 60000; // default 60s
+  private autoSync = true; // default: autosync on change detection
   private lastAttemptAtById = new Map<string, number>();
   private offlineMarkerKey = "syncWasOffline";
 
@@ -48,6 +49,14 @@ export class SyncService {
 
   public getDebounceMs(): number {
     return this.debounceMs;
+  }
+
+  public setAutoSync(enabled: boolean): void {
+    this.autoSync = !!enabled;
+  }
+
+  public getAutoSync(): boolean {
+    return this.autoSync;
   }
 
   private async ensureBreaker(): Promise<CircuitBreaker> {
@@ -199,7 +208,8 @@ export class SyncService {
    * @returns Object indicating success status
    */
   public async updateDrawing(
-    drawing: IDrawing
+    drawing: IDrawing,
+    options: { manual?: boolean } = {}
   ): Promise<{ success: boolean; reason?: string }> {
     if (!drawing.sync) return { success: false, reason: "not-enabled" };
     if (!isOnline()) {
@@ -216,9 +226,26 @@ export class SyncService {
       );
       return { success: false, reason: "circuit-open" };
     }
-    if (this.shouldDebounce(drawing.id)) {
-      await this.log("info", `updateDrawing debounced ${drawing.id}`);
-      return { success: false, reason: "debounced" };
+    const isManual = !!(drawing as any).__manualSync || !!options.manual;
+
+    // When doing an explicit manual sync (Save from excalisave menu, or SYNC_DRAWING),
+    // always bypass debounce and autosync gate. Manual syncs ignore debounce entirely.
+    if (!isManual) {
+      // Check autosync gate first so we don't pollute debounce timer when autosync is off
+      if (!this.autoSync) {
+        await this.log(
+          "info",
+          `updateDrawing skipped (autosync disabled) ${drawing.id}`
+        );
+        return { success: false, reason: "autosync-disabled" };
+      }
+      if (this.shouldDebounce(drawing.id)) {
+        await this.log("info", `updateDrawing debounced ${drawing.id}`);
+        return { success: false, reason: "debounced" };
+      }
+    } else {
+      // Manual syncs: update timestamp so a later autosync window starts after this point
+      this.lastAttemptAtById.set(drawing.id, Date.now());
     }
 
     // We set these to null to avoid conflicts with the sync provider

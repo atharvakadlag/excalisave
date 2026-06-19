@@ -9,6 +9,7 @@ export interface BaseSyncConfig {
   branch: string;
   baseUrl?: string;
   debounceMs?: number; // 0..600000 ms, default 10000
+  autoSync?: boolean; // default true; when false, only explicit "Save" from excalisave menu triggers sync
 }
 
 export interface GitHubSyncConfig extends BaseSyncConfig {
