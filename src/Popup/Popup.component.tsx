@@ -46,6 +46,7 @@ import {
 import { MergeConflictDialog } from "../components/MergeConflict/MergeConflict.component";
 import { SyncService } from "../services/sync.service";
 import { CustomDomainUtils } from "../lib/custom-domaints.utilts";
+import { searchDrawings } from "../services/search.service";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -103,7 +104,7 @@ const Popup: React.FC = () => {
         await browser.storage.local.get();
 
       const newDrawings: IDrawing[] = Object.values(result).filter(
-        (drawing: IDrawing) => drawing?.id?.startsWith?.("drawing:")
+        (drawing: IDrawing) => drawing?.id?.startsWith?.("drawing:"),
       );
 
       setDrawings(newDrawings);
@@ -153,7 +154,7 @@ const Popup: React.FC = () => {
               "Error loading drawing: No active tab or drawing found",
               {
                 activeTab,
-              }
+              },
             );
 
             return;
@@ -237,7 +238,7 @@ const Popup: React.FC = () => {
                 window.dispatchEvent(
                   new CustomEvent("localStorageChange", {
                     detail: { key: titleKey, value: newTitle },
-                  })
+                  }),
                 );
               },
               args: [DRAWING_TITLE_KEY_LS, newName],
@@ -377,7 +378,7 @@ const Popup: React.FC = () => {
   };
 
   const currentDrawing = drawings.find(
-    (drawing) => drawing.id === currentDrawingId
+    (drawing) => drawing.id === currentDrawingId,
   );
 
   const handleLoadItemWithConfirm = async (loadDrawingId: string) => {
@@ -392,34 +393,26 @@ const Popup: React.FC = () => {
   };
 
   const filterDrawings = () => {
+    // If we're in a folder view, filter by folder
     if (sidebarSelected?.startsWith("folder:")) {
       const folder = folders.find((folder) => folder.id === sidebarSelected);
-
-      if (!folder) {
-        return [];
-      }
-
-      return drawings.filter((drawing) => {
-        return folder.drawingIds.includes(drawing.id);
-      });
+      return folder
+        ? drawings.filter((drawing) => folder.drawingIds.includes(drawing.id))
+        : [];
     }
 
-    switch (sidebarSelected) {
-      case "Favorites":
-        return drawings.filter((drawing) => {
-          return favorites.includes(drawing.id);
-        });
-      case "Results":
-        return drawings.filter((drawing) => {
-          // TODO: Fix this, this is not enecssary
-          return (
-            drawing.name &&
-            drawing.name.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        });
-      default:
-        return drawings;
+    // If we're in search mode, filter by search term
+    if (sidebarSelected === "Results" && searchTerm) {
+      return searchDrawings(drawings, searchTerm);
     }
+
+    // If we're in favorites, filter by favorites
+    if (sidebarSelected === "Favorites") {
+      return drawings.filter((drawing) => favorites.includes(drawing.id));
+    }
+
+    // Default case: show all drawings
+    return drawings;
   };
 
   const filteredDrawings = filterDrawings();
@@ -476,8 +469,8 @@ const Popup: React.FC = () => {
     // Update the UI to reflect the changes
     setDrawings(
       drawings.map((drawing) =>
-        drawing.id === mergeConflict.drawingId ? drawingToUse : drawing
-      )
+        drawing.id === mergeConflict.drawingId ? drawingToUse : drawing,
+      ),
     );
 
     // Try to save to GitHub again
