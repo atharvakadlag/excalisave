@@ -3,6 +3,7 @@ import { Scripting, browser } from "webextension-polyfill-ts";
 import { TabUtils } from "../../lib/utils/tab.utils";
 import { DRAWING_ID_KEY_LS } from "../../lib/constants";
 import { XLogger } from "../../lib/logger";
+import { CustomDomainUtils } from "../../lib/custom-domaints.utilts";
 
 export function useCurrentDrawingId(): {
   currentDrawingId: string;
@@ -11,7 +12,7 @@ export function useCurrentDrawingId(): {
   setCurrentDrawingId: (id: string) => void;
   setIsLiveCollaboration: (isLive: boolean) => void;
 } {
-  const [inExcalidrawPage, setInExcalidrawPage] = useState<boolean>(true);
+  const [inExcalidrawPage, setInExcalidrawPage] = useState<boolean>(false);
   const [currentDrawingId, setCurrentDrawingId] = useState<string>(undefined);
   const [isLiveCollaboration, setIsLiveCollaboration] =
     useState<boolean>(false);
@@ -26,8 +27,9 @@ export function useCurrentDrawingId(): {
         return;
       }
 
-      if (!activeTab.url.startsWith("https://excalidraw.com")) {
-        setInExcalidrawPage(false);
+      if (await CustomDomainUtils.isAnExcalidrawPage(activeTab)) {
+        setInExcalidrawPage(true);
+      } else {
         return;
       }
 

@@ -1,12 +1,13 @@
 import { browser } from "webextension-polyfill-ts";
 import { XLogger } from "../lib/logger";
+import { MessageType } from "../constants/message.types";
 
 const addOverwriteAction = () => {
   const overwriteActionsDiv = document.querySelector(
-    ".OverwriteConfirm__Actions"
+    ".OverwriteConfirm__Actions",
   );
   const excalisaveButton = document.querySelector(
-    ".overwriteconfirm_excalisave"
+    ".overwriteconfirm_excalisave",
   );
   if (!overwriteActionsDiv || excalisaveButton) {
     return;
@@ -15,12 +16,12 @@ const addOverwriteAction = () => {
   XLogger.info("OverwriteConfirm__Actions found");
   // create a copy for the first div child of overwriteActionsDiv
   const newAction = overwriteActionsDiv.firstChild.cloneNode(
-    true
+    true,
   ) as HTMLDivElement;
   // change the text of the first h4 child inside newAction
   newAction.querySelector("h4").textContent = "Excalisave";
   const innerDiv = newAction.querySelector(
-    "div.OverwriteConfirm__Actions__Action__content"
+    "div.OverwriteConfirm__Actions__Action__content",
   ) as HTMLDivElement;
   // change the text inside html div inside the button
   innerDiv.textContent = "Save the current drawing as an excalisave drawing.";
@@ -40,7 +41,7 @@ const addOverwriteAction = () => {
 
     // send MessageAutoSave message to background script
     browser.runtime.sendMessage({
-      type: "MessageAutoSave",
+      type: MessageType.MESSAGE_AUTO_SAVE,
       payload: {
         name,
         setCurrent: false,
@@ -48,12 +49,12 @@ const addOverwriteAction = () => {
     });
 
     var elem = document.querySelector(
-      "body > div.excalidraw.excalidraw-modal-container > div > div.Modal__content > div > div > div > div.OverwriteConfirm__Description.OverwriteConfirm__Description--color-danger > button"
+      "body > div.excalidraw.excalidraw-modal-container > div > div.Modal__content > div > div > div > div.OverwriteConfirm__Description.OverwriteConfirm__Description--color-danger > button",
     ) as HTMLButtonElement;
     // convert elem into button
     elem.click();
 
-    browser.runtime.sendMessage({ type: "ClearDrawingID" });
+    browser.runtime.sendMessage({ type: MessageType.CLEAR_DRAWING_ID });
     XLogger.log("ClearDrawingID message sent");
   });
   const newDiv = document.createElement("div");

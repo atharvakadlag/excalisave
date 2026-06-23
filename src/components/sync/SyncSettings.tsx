@@ -47,7 +47,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       try {
         setIsLoading(true);
         const response = await browser.runtime.sendMessage({
-          type: "GET_GITHUB_CONFIG",
+          type: MessageType.GET_GITHUB_CONFIG,
         });
 
         if (response.success && response.config) {
@@ -57,10 +57,10 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
 
           // Check if sync is initialized
           const authResponse = await browser.runtime.sendMessage({
-            type: "CHECK_GITHUB_AUTH",
+            type: MessageType.CHECK_GITHUB_AUTH,
           });
           setIsInitialized(
-            authResponse.success && authResponse.isAuthenticated
+            authResponse.success && authResponse.isAuthenticated,
           );
 
           // Load commit history if GitHub is configured
@@ -76,7 +76,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
         // Load drawings
         const storage = await browser.storage.local.get();
         const drawings: IDrawing[] = Object.values(storage).filter(
-          (o) => o?.id?.startsWith?.("drawing:")
+          (o) => o?.id?.startsWith?.("drawing:"),
         );
 
         if (drawings) {
@@ -124,7 +124,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       setIsLoading(true);
 
       const response = await browser.runtime.sendMessage({
-        type: "REMOVE_GITHUB_PROVIDER",
+        type: MessageType.REMOVE_GITHUB_PROVIDER,
       });
 
       if (!response.success) {
@@ -165,11 +165,11 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       }
 
       const authResponse = await browser.runtime.sendMessage({
-        type: "CHECK_GITHUB_AUTH",
+        type: MessageType.CHECK_GITHUB_AUTH,
       });
       if (!authResponse.success || !authResponse.isAuthenticated) {
         setError(
-          "Failed to authenticate with GitHub. Please check your token and repository settings."
+          "Failed to authenticate with GitHub. Please check your token and repository settings.",
         );
         setIsInitialized(false);
         return;
@@ -182,7 +182,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to initialize GitHub sync"
+          : "Failed to initialize GitHub sync",
       );
       setIsInitialized(false);
     } finally {

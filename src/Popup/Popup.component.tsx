@@ -45,6 +45,7 @@ import {
 } from "../constants/message.types";
 import { MergeConflictDialog } from "../components/MergeConflict/MergeConflict.component";
 import { SyncService } from "../services/sync.service";
+import { CustomDomainUtils } from "../lib/custom-domaints.utilts";
 import { searchDrawings } from "../services/search.service";
 
 const DialogDescription = Dialog.Description as any;
@@ -103,7 +104,7 @@ const Popup: React.FC = () => {
         await browser.storage.local.get();
 
       const newDrawings: IDrawing[] = Object.values(result).filter(
-        (drawing: IDrawing) => drawing?.id?.startsWith?.("drawing:")
+        (drawing: IDrawing) => drawing?.id?.startsWith?.("drawing:"),
       );
 
       setDrawings(newDrawings);
@@ -147,13 +148,13 @@ const Popup: React.FC = () => {
           XLogger.debug("Active tab", activeTab);
           if (
             !activeTab ||
-            !activeTab.url?.startsWith("https://excalidraw.com")
+            !(await CustomDomainUtils.isAnExcalidrawPage(activeTab))
           ) {
             XLogger.error(
               "Error loading drawing: No active tab or drawing found",
               {
                 activeTab,
-              }
+              },
             );
 
             return;
@@ -237,7 +238,7 @@ const Popup: React.FC = () => {
                 window.dispatchEvent(
                   new CustomEvent("localStorageChange", {
                     detail: { key: titleKey, value: newTitle },
-                  })
+                  }),
                 );
               },
               args: [DRAWING_TITLE_KEY_LS, newName],
@@ -377,7 +378,7 @@ const Popup: React.FC = () => {
   };
 
   const currentDrawing = drawings.find(
-    (drawing) => drawing.id === currentDrawingId
+    (drawing) => drawing.id === currentDrawingId,
   );
 
   const handleLoadItemWithConfirm = async (loadDrawingId: string) => {
@@ -468,8 +469,8 @@ const Popup: React.FC = () => {
     // Update the UI to reflect the changes
     setDrawings(
       drawings.map((drawing) =>
-        drawing.id === mergeConflict.drawingId ? drawingToUse : drawing
-      )
+        drawing.id === mergeConflict.drawingId ? drawingToUse : drawing,
+      ),
     );
 
     // Try to save to GitHub again

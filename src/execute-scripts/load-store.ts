@@ -3,6 +3,7 @@ import { createStore, keys, set, update } from "idb-keyval";
 import { getScriptParams } from "../ContentScript/content-script.utils";
 import { XLogger } from "../lib/logger";
 import { browser } from "webextension-polyfill-ts";
+import { MessageType } from "../constants/message.types";
 
 // Were images are stored: https://github.com/excalidraw/excalidraw/blob/e8def8da8d5fcf9445aebdd996de3fee4cecf7ef/excalidraw-app/data/LocalData.ts#L24
 const filesStore = createStore("files-db", "files-store");
@@ -27,7 +28,7 @@ type ScriptParams = {
     const storeKeys = await keys(filesStore);
 
     const fileIdsToUpdate = storeKeys.filter(
-      (key) => files[key.toString()] !== undefined
+      (key) => files[key.toString()] !== undefined,
     );
 
     XLogger.debug("Ids of files that needs to be updated", fileIdsToUpdate);
@@ -50,7 +51,7 @@ type ScriptParams = {
     XLogger.debug("Files added to IndexedDB");
   } catch (error) {
     await browser.runtime.sendMessage({
-      type: "ERROR_LOADING_STORE",
+      type: MessageType.ERROR_LOADING_STORE,
       payload: error,
     });
   } finally {

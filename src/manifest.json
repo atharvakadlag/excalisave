@@ -59,12 +59,15 @@
         "assets/*"
       ],
       "matches": [
-        "https://excalidraw.com/*"
+        "<all_urls>"
       ]
     }
   ],
   "host_permissions": [
     "https://excalidraw.com/*"
+  ],
+  "optional_host_permissions": [
+    "*://*/*"
   ],
   "content_scripts": [
     {

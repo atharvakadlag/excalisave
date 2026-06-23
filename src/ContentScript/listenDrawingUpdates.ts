@@ -2,6 +2,7 @@ import { MessageType, SaveDrawingMessage } from "../constants/message.types";
 import { DRAWING_ID_KEY_LS } from "../lib/constants";
 import { XLogger } from "../lib/logger";
 import { As } from "../lib/types.utils";
+import { waitForElement } from "../lib/utils/wait-for-element.util";
 import { getDrawingDataState } from "./content-script.utils";
 import { initExcalidrawClientUI } from "./excalidraw-client-ui";
 const { browser } = require("webextension-polyfill-ts");
@@ -81,4 +82,8 @@ window.addEventListener("beforeunload", () => {
   } catch {}
 });
 
-initExcalidrawClientUI();
+waitForElement(".excalidraw-container")
+  .then(() => initExcalidrawClientUI())
+  .catch((error) =>
+    XLogger.error("[ExcalidrawClientUI] Failed to find container", error)
+  );

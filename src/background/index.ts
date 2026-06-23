@@ -1,19 +1,16 @@
 import { browser } from "webextension-polyfill-ts";
-import {
-  CleanupFilesMessage,
-  ConfigureGithubProviderMessage,
-  DeleteDrawingMessage,
-  GetChangeHistoryMessage,
-  MessageType,
-  SaveDrawingMessage,
-  SaveNewDrawingMessage,
-} from "../constants/message.types";
+import { BackgroundMessage, MessageType } from "../constants/message.types";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { XLogger } from "../lib/logger";
-import { TabUtils } from "../lib/utils/tab.utils";
 import { RandomUtils } from "../lib/utils/random.utils";
-import { SyncService } from "../services/sync.service";
+import { TabUtils } from "../lib/utils/tab.utils";
 import { GitHubConfigService } from "../services/github/github-config.service";
+import { SyncService } from "../services/sync.service";
+import {
+  CUSTOM_DOMAINS_KEY,
+  getCustomDomains,
+  registerContentScriptForCustomDomains,
+} from "./custom-domains.utils";
 
 // Initialize services
 const syncService = SyncService.getInstance();
@@ -30,27 +27,30 @@ browser.runtime.onInstalled.addListener(async () => {
       });
     }
   }
+
+  XLogger.debug(
+    "[Installed] Registering content scripts for custom domains..."
+  );
+  const domains = await getCustomDomains();
+  await registerContentScriptForCustomDomains(domains);
+  XLogger.debug("[Installed] ✅ Content scripts for custom domains registered");
 });
 
+browser.runtime.onStartup.addListener(async () => {
+  XLogger.debug("[Startup] Registering content scripts for custom domains...");
+  const domains = await getCustomDomains();
+  await registerContentScriptForCustomDomains(domains);
+  XLogger.debug("[Startup] ✅ Content scripts for custom domains registered");
+});
 browser.runtime.onMessage.addListener(
-  async (
-    message:
-      | SaveDrawingMessage
-      | SaveNewDrawingMessage
-      | CleanupFilesMessage
-      | DeleteDrawingMessage
-      | GetChangeHistoryMessage
-      | ConfigureGithubProviderMessage
-      | any,
-    _sender: any
-  ) => {
+  async (message: BackgroundMessage, _sender: any): Promise<any> => {
     try {
       XLogger.log("Message background", message);
       if (!message || !message.type)
         return { success: false, error: "Invalid message" };
 
       switch (message.type) {
-        case "OpenPopup":
+        case MessageType.OPEN_POPUP:
           browser.action.openPopup();
           break;
 
@@ -171,7 +171,7 @@ browser.runtime.onMessage.addListener(
 
           return { success: true };
 
-        case "MessageAutoSave":
+        case MessageType.MESSAGE_AUTO_SAVE:
           const name = message.payload.name;
           const setCurrent = message.payload.setCurrent;
           XLogger.log("Saving new drawing", { name });
@@ -210,17 +210,23 @@ browser.runtime.onMessage.addListener(
             message.payload.drawingsToSync
           );
 
-        case "REMOVE_GITHUB_PROVIDER":
+        case MessageType.REMOVE_GITHUB_PROVIDER:
           return await githubConfigService.removeGitHubProvider();
 
-        case "GET_GITHUB_CONFIG":
+        case MessageType.GET_GITHUB_CONFIG:
           return await githubConfigService.getGitHubConfig();
 
-        case "CHECK_GITHUB_AUTH":
+        case MessageType.CHECK_GITHUB_AUTH:
           return await githubConfigService.checkGitHubAuth();
 
         case MessageType.DELETE_DRAWING_SYNC:
-          return await syncService.deleteDrawing(message.payload.id);
+          const drawingToDeleteSync = (
+            await browser.storage.local.get(message.payload.id)
+          )[message.payload.id] as IDrawing;
+          if (drawingToDeleteSync) {
+            await syncService.deleteDrawing(drawingToDeleteSync);
+          }
+          return { success: true };
 
         case MessageType.GET_CHANGE_HISTORY:
           const changeHistory = await syncService.getChangeHistory(
@@ -231,6 +237,72 @@ browser.runtime.onMessage.addListener(
             success: true,
             commits: changeHistory,
           };
+
+        case MessageType.ADD_CUSTOM_DOMAIN:
+          const { origin } = message.payload;
+
+          const granted = await browser.permissions.request({
+            origins: [`${origin}/*`],
+          });
+
+          if (!granted) {
+            return { success: false, error: "Permission denied" };
+          }
+
+          const currentDomains = await getCustomDomains();
+
+          const newDomains = [...currentDomains, { origin, enabled: true }];
+          await browser.storage.local.set({
+            [CUSTOM_DOMAINS_KEY]: newDomains,
+          });
+
+          await registerContentScriptForCustomDomains(newDomains);
+
+          // Reload any open tabs matching the new domain to inject content scripts
+          const tabsToInject = await browser.tabs.query({
+            url: `${origin}/*`,
+          });
+          for (const tab of tabsToInject) {
+            if (tab.id) {
+              browser.tabs.reload(tab.id);
+            }
+          }
+
+          return { success: true };
+
+        case MessageType.REMOVE_CUSTOM_DOMAIN:
+          const domainToRemove = message.payload.origin;
+
+          const existingDomains = await getCustomDomains();
+
+          const filteredDomains = existingDomains.filter(
+            (domain) => domain.origin !== domainToRemove
+          );
+
+          await browser.storage.local.set({
+            [CUSTOM_DOMAINS_KEY]: filteredDomains,
+          });
+
+          await registerContentScriptForCustomDomains(filteredDomains);
+
+          await browser.permissions.remove({
+            origins: [`${domainToRemove}/*`],
+          });
+
+          // Reload removed tabs to remove content scripts and update listeners
+          const tabsToReload = await browser.tabs.query({
+            url: `${domainToRemove}/*`,
+          });
+          for (const tab of tabsToReload) {
+            if (tab.id) {
+              browser.tabs.reload(tab.id);
+            }
+          }
+
+          return { success: true };
+
+        case MessageType.GET_CUSTOM_DOMAINS:
+          return { success: true, domains: await getCustomDomains() };
 
         default:
           return { success: false, error: "Unknown message type" };

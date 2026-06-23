@@ -25,4 +25,29 @@ declare module "webextension-polyfill-ts" {
       session: Storage.StorageArea;
     }
   }
+
+  namespace Scripting {
+    interface ContentScriptFilter {
+      ids?: string[];
+    }
+
+    interface RegisterContentScriptsDetails {
+      id: string;
+      js?: string[];
+      css?: string[];
+      matches: string[];
+      excludeMatches?: string[];
+      allFrames?: boolean;
+      matchOriginAsFallback?: boolean;
+      runAt?: "document_start" | "document_end" | "document_idle";
+      world?: "ISOLATED" | "MAIN";
+    }
+
+    interface Static {
+      unregisterContentScripts(filter?: ContentScriptFilter): Promise<void>;
+      registerContentScripts(
+        scripts: RegisterContentScriptsDetails[]
+      ): Promise<void>;
+    }
+  }
 }
