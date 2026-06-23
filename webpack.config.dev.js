@@ -203,7 +203,7 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: "src/assets", to: "assets" },
-        { from: "src/external-libs", to: "libs" },
+
         { from: "node_modules/react/umd/react.production.min.js", to: "libs" },
         {
           from: "node_modules/react-dom/umd/react-dom.production.min.js",
