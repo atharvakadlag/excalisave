@@ -4,7 +4,6 @@ import {
   HeartIcon,
   ListBulletIcon,
   MagnifyingGlassIcon,
-  PlusCircledIcon,
 } from "@radix-ui/react-icons";
 import { Box, Flex, Separator, Text } from "@radix-ui/themes";
 import { clsx } from "clsx";
@@ -16,13 +15,14 @@ import "./Sidebar.styles.scss";
 import { Placeholder } from "../Placeholder/Placeholder.component";
 import { browser } from "webextension-polyfill-ts";
 import { TabUtils } from "../../lib/utils/tab.utils";
+import type { UUID } from "../../lib/utils/id.utils";
 
 type SidebarProps = {
   onChangeSelected?: (selected: string) => void;
   folders: Folder[];
   onCreateFolder: (name: string) => void;
-  onRemoveFolder: (id: string) => void;
-  onRenameFolder: (id: string, name: string) => void;
+  onRemoveFolder: (id: UUID) => void;
+  onRenameFolder: (id: UUID, name: string) => void;
   selected: string;
 };
 
@@ -147,7 +147,7 @@ export function Sidebar({ folders, onCreateFolder, ...props }: SidebarProps) {
               <Text
                 as="div"
                 size="1"
-                className="Placeholder__emptyFolersMessage"
+                className="Placeholder__emptyFoldersMessage"
               >
                 Create a collection by clicking on plus icon to organize your
                 drawings

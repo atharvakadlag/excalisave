@@ -12,6 +12,7 @@ import { clsx } from "clsx";
 import React, { useState } from "react";
 import { LuFolder, LuFolderOpen } from "react-icons/lu";
 import { Folder } from "../../../interfaces/folder.interface";
+import type { UUID } from "../../../lib/utils/id.utils";
 
 const DialogDescription = Dialog.Description as any;
 
@@ -19,8 +20,8 @@ type SidebarProps = {
   folder: Folder;
   isSelected: boolean;
   onChangeSelected?: (selected: string) => void;
-  onRenameFolder: (folderId: string, name: string) => void;
-  onRemoveFolder: (folderId: string) => void;
+  onRenameFolder: (folderId: UUID, name: string) => void;
+  onRemoveFolder: (folderId: UUID) => void;
 };
 
 export function FolderItem({
@@ -128,7 +129,7 @@ export function FolderItem({
                 }
               }}
               value={newName}
-              placeholder="Rename drawing"
+              placeholder="Rename collection"
             />
           </Flex>
 

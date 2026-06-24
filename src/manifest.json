@@ -9,7 +9,7 @@
     "48": "assets/icons/48.png",
     "128": "assets/icons/128.png"
   },
-  "homepage_url": "https://github.com/atharvakadlag/excalisave",
+  "homepage_url": "https://github.com/david-vos/excalisave",
   "permissions": [
     "activeTab",
     "tabs",
@@ -17,13 +17,17 @@
     "scripting",
     "unlimitedStorage"
   ],
-  "__chrome|firefox__author": "atharvakadlag",
+  "__chrome|firefox__author": "david-vos (fork of atharvakadlag/excalisave)",
   "__opera__developer": {
-    "name": "atharvakadlag"
+    "name": "david-vos"
   },
   "__firefox|prod__browser_specific_settings": {
     "gecko": {
-      "id": "excalisave@atharvakadlag.github.io"
+      "id": "excalisave-fork@dvos.me",
+      "data_collection_permissions": {
+        "required": ["none"],
+        "optional": []
+      }
     }
   },
   "__chrome__minimum_chrome_version": "88",
@@ -59,12 +63,15 @@
         "assets/*"
       ],
       "matches": [
-        "https://excalidraw.com/*"
+        "<all_urls>"
       ]
     }
   ],
   "host_permissions": [
     "https://excalidraw.com/*"
+  ],
+  "optional_host_permissions": [
+    "*://*/*"
   ],
   "content_scripts": [
     {
@@ -74,21 +81,11 @@
       "js": [
         "libs/react.production.min.js",
         "libs/react-dom.production.min.js",
-        "libs/excalidraw.production.min.js",
         "js/content-scripts/listenDrawingUpdates.bundle.js"
       ],
       "css": [
         "css/content-scripts/listenDrawingUpdates.css"
       ]
-    },
-    {
-      "matches": [
-        "https://excalidraw.com/*"
-      ],
-      "js": [
-        "js/content-scripts/addOverwriteAction.bundle.js"
-      ],
-      "run_at": "document_idle"
     }
   ]
 }

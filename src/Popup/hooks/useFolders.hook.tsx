@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { browser } from "webextension-polyfill-ts";
 import { Folder } from "../../interfaces/folder.interface";
-import { RandomUtils } from "../../lib/utils/random.utils";
+import { IdUtils } from "../../lib/utils/id.utils";
 
 export function useFolders() {
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -11,7 +11,7 @@ export function useFolders() {
       (await browser.storage.local.get("folders"))?.folders || [];
 
     const newFolder: Folder = {
-      id: `folder:${RandomUtils.generateRandomId()}`,
+      id: IdUtils.createFolderId(),
       name,
       drawingIds: [],
     };

@@ -2,6 +2,7 @@ import {
   ExcalidrawElement,
   ExcalidrawTextElement,
 } from "@excalidraw/excalidraw/types/element/types";
+import { IDrawing } from "../interfaces/drawing.interface";
 
 /**
  * Scoring weights for search results
@@ -72,7 +73,7 @@ function calculateSimilarity(a: string, b: string): number {
  * @param searchTerm - Search query to match against
  * @returns Sorted array of drawings matching the search criteria
  */
-export function searchDrawings(drawings: any[], searchTerm: string) {
+export function searchDrawings(drawings: IDrawing[], searchTerm: string): IDrawing[] {
   const normalizedSearchTerm = normalizeText(searchTerm);
   const searchWords = normalizedSearchTerm
     .split(/\s+/)

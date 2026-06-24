@@ -27,7 +27,7 @@ import { Placeholder } from "../components/Placeholder/Placeholder.component";
 import { Sidebar } from "../components/Sidebar/Sidebar.component";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { DRAWING_TITLE_KEY_LS } from "../lib/constants";
-import { DrawingStore } from "../lib/drawing-store";
+import { DrawingStore } from "../lib/drawingStore";
 import { XLogger } from "../lib/logger";
 import { TabUtils } from "../lib/utils/tab.utils";
 import { useCurrentDrawingId } from "./hooks/useCurrentDrawing.hook";
@@ -46,12 +46,13 @@ import {
 import { MergeConflictDialog } from "../components/MergeConflict/MergeConflict.component";
 import { SyncService } from "../services/sync.service";
 import { searchDrawings } from "../services/search.service";
+import type { UUID } from "../lib/utils/id.utils";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
 
 const Popup: React.FC = () => {
-  const [drawings, setDrawings] = React.useState<IDrawing[]>([]);
+  const [drawings, setDrawings] = useState<IDrawing[]>([]);
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const {
     folders,
@@ -62,8 +63,8 @@ const Popup: React.FC = () => {
     removeDrawingFromFolder,
     removeDrawingFromAllFolders,
   } = useFolders();
-  const [searchTerm, setSearchTerm] = React.useState<string>("");
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const {
     currentDrawingId,
     inExcalidrawPage,
@@ -71,7 +72,7 @@ const Popup: React.FC = () => {
     isLiveCollaboration,
     setIsLiveCollaboration,
   } = useCurrentDrawingId();
-  const drawingIdToSwitch = useRef<string | undefined>(undefined);
+  const drawingIdToSwitch = useRef<UUID | undefined>(undefined);
   const [sidebarSelected, setSidebarSelected] = useState("");
   const { getRestorePoint, setRestorePoint } = useRestorePoint();
   const { loading, startLoading } = useDrawingLoading();
@@ -79,7 +80,7 @@ const Popup: React.FC = () => {
     useState<boolean>(false);
   const [mergeConflict, setMergeConflict] = useState<{
     isOpen: boolean;
-    drawingId: string;
+    drawingId: UUID;
     localDrawing: IDrawing;
     remoteDrawing: IDrawing;
   } | null>(null);
@@ -201,7 +202,7 @@ const Popup: React.FC = () => {
     });
   }, [searchTerm, sidebarSelected]);
 
-  const onRenameDrawing = async (id: string, newName: string) => {
+  const onRenameDrawing = async (id: UUID, newName: string) => {
     try {
       // Update the UI
       const newDrawing = drawings.map((drawing) => {
@@ -218,12 +219,15 @@ const Popup: React.FC = () => {
       setDrawings(newDrawing);
 
       // Update local storage
-      await browser.storage.local.set({
-        [id]: {
-          ...drawings.find((drawing) => drawing.id === id),
-          name: newName,
-        },
-      });
+      const drawingToUpdate = drawings.find((drawing) => drawing.id === id);
+      if (drawingToUpdate) {
+        await browser.storage.local.set({
+          [id]: {
+            ...drawingToUpdate,
+            name: newName,
+          },
+        });
+      }
 
       // If this is the current drawing, update localStorage in the Excalidraw tab
       if (currentDrawingId === id && inExcalidrawPage) {
@@ -260,7 +264,7 @@ const Popup: React.FC = () => {
     }
   };
 
-  const onDeleteDrawing = async (id: string) => {
+  const onDeleteDrawing = async (id: UUID) => {
     try {
       // First, try to delete from sync service
       await browser.runtime.sendMessage({
@@ -292,22 +296,14 @@ const Popup: React.FC = () => {
     const isSameDrawing = loadDrawingId === currentDrawing?.id;
     if (!loading && (isLiveCollaboration || !isSameDrawing)) {
       startLoading();
-      const activeTab = await TabUtils.getActiveTab();
 
-      if (!activeTab) {
-        XLogger.error("Error loading drawing: No active tab or drawing found", {
-          activeTab,
-        });
-
-        return;
-      }
-
-      await DrawingStore.loadDrawing(loadDrawingId);
+      await browser.runtime.sendMessage({
+        type: MessageType.LOAD_DRAWING,
+        payload: { id: loadDrawingId },
+      });
 
       setCurrentDrawingId(loadDrawingId);
       setIsLiveCollaboration(false);
-      // TODO: Activate this to avoid fast switching errors(or block switching for a few milis)
-      // window.close();
     }
   };
 
@@ -327,15 +323,15 @@ const Popup: React.FC = () => {
     window.close();
   };
 
-  const handleAddToFavorites = async (drawingId: string) => {
+  const handleAddToFavorites = async (drawingId: UUID) => {
     await addToFavorites(drawingId);
   };
 
-  const handleRemoveFromFavorites = async (drawingId: string) => {
+  const handleRemoveFromFavorites = async (drawingId: UUID) => {
     await removeFromFavorites(drawingId);
   };
 
-  const handleToggleSync = async (drawingId: string, sync: boolean) => {
+  const handleToggleSync = async (drawingId: UUID, sync: boolean) => {
     try {
       // Update the UI
       const newDrawing = drawings.map((drawing) => {
@@ -345,12 +341,15 @@ const Popup: React.FC = () => {
       setDrawings(newDrawing);
 
       // Update local storage
-      await browser.storage.local.set({
-        [drawingId]: {
-          ...drawings.find((drawing) => drawing.id === drawingId),
-          sync,
-        },
-      });
+      const drawingToUpdate = drawings.find((drawing) => drawing.id === drawingId);
+      if (drawingToUpdate) {
+        await browser.storage.local.set({
+          [drawingId]: {
+            ...drawingToUpdate,
+            sync,
+          },
+        });
+      }
 
       // If enabling sync, trigger an immediate sync
       if (sync) {
@@ -360,10 +359,7 @@ const Popup: React.FC = () => {
             id: drawingId,
           },
         } as SyncDrawingMessage);
-        return;
-      }
-
-      if (!sync) {
+      } else {
         await browser.runtime.sendMessage({
           type: MessageType.DELETE_DRAWING_SYNC,
           payload: {
@@ -381,9 +377,7 @@ const Popup: React.FC = () => {
   );
 
   const handleLoadItemWithConfirm = async (loadDrawingId: string) => {
-    if (!inExcalidrawPage) return;
-
-    if (!currentDrawing && (await DrawingStore.hasUnsavedChanges())) {
+    if (inExcalidrawPage && !currentDrawing && (await DrawingStore.hasUnsavedChanges())) {
       drawingIdToSwitch.current = loadDrawingId;
       setIsConfirmSwitchDialogOpen(true);
     } else {
@@ -394,7 +388,7 @@ const Popup: React.FC = () => {
   const filterDrawings = () => {
     // If we're in a folder view, filter by folder
     if (sidebarSelected?.startsWith("folder:")) {
-      const folder = folders.find((folder) => folder.id === sidebarSelected);
+      const folder = folders.find((f) => f.id === sidebarSelected);
       return folder
         ? drawings.filter((drawing) => folder.drawingIds.includes(drawing.id))
         : [];

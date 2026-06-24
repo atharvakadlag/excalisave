@@ -13,6 +13,14 @@ export function useLocalStorageString(
   });
 
   useEffect(() => {
+    // Re-read localStorage to catch any changes that occurred
+    // between useState init and this effect running (race condition
+    // with executed scripts that set values during mount gap).
+    const current = localStorage.getItem(key);
+    if (current !== null) {
+      setValue(current || initialValue);
+    }
+
     // Handle changes in the same tab
     const handleCustomStorageChange = (e: Event) => {
       const customEvent = e as CustomEvent<{

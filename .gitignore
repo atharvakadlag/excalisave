@@ -207,3 +207,6 @@ dist/
 
 .yalc/
 yalc.lock
+
+.cursor/
+.claude/

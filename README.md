@@ -1,6 +1,3 @@
-Attempting to recover my mozzila account due to loss of 2FA 
-3878b3be90a54f1a94fe70f1e16af534
-
 <p align="center"><img width="64px" alt="Icon" src="./src/assets/icons/128.png"></p>
 <h1 align="center">Excalisave</h1>
 <p align="center">Save your Excalidraw drawings</p>

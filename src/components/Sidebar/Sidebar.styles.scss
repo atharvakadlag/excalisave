@@ -19,7 +19,6 @@
     &__count {
       color: rgb(162, 162, 162);
       border-radius: 50%;
-      margin-left: auto;
       font-size: 10px;
       display: flex;
       align-items: center;
@@ -55,12 +54,12 @@
 
 .Placeholder {
   &:hover {
-    .Placeholder__emptyFolersMessage {
+    .Placeholder__emptyFoldersMessage {
       color: inherit;
     }
   }
 
-  &__emptyFolersMessage {
+  &__emptyFoldersMessage {
     padding-left: 8px;
     padding-right: 8px;
     color: white;
