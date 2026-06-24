@@ -11,14 +11,18 @@ import {
   CircuitBreaker,
   isOnline,
   withBackoff,
+  SyncHealth,
 } from "./sync/sync-resilience";
 import { appendSyncLog, getSyncLog } from "./sync/sync-log";
-
+import {
+  CLAMP_MAX_SYNC_DEBOUNCE_MS,
+  DEFAULT_SYNC_DEBOUNCE_MS,
+} from "../constants/sync-config";
 export class SyncService {
   private static instance: SyncService;
   private provider: SyncProvider | null = null;
   private breaker: CircuitBreaker | null = null;
-  private debounceMs = 60000; // default 60s
+  private debounceMs = DEFAULT_SYNC_DEBOUNCE_MS;
   private autoSync = true; // default: autosync on change detection
   private lastAttemptAtById = new Map<string, number>();
   private offlineMarkerKey = "syncWasOffline";
@@ -43,7 +47,10 @@ export class SyncService {
 
   public setDebounceMs(ms: number): void {
     if (Number.isFinite(ms) && ms >= 0) {
-      this.debounceMs = Math.max(0, Math.min(600000, Math.floor(ms)));
+      this.debounceMs = Math.max(
+        0,
+        Math.min(CLAMP_MAX_SYNC_DEBOUNCE_MS, Math.floor(ms))
+      );
     }
   }
 
@@ -490,9 +497,7 @@ export class SyncService {
 
   // --- health + log helpers exposed for UI ---
 
-  public async getHealth(): Promise<
-    import("./sync/sync-resilience").SyncHealth
-  > {
+  public async getHealth(): Promise<SyncHealth> {
     const br = await this.ensureBreaker();
     return br.getState();
   }

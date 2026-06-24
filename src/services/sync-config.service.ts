@@ -2,6 +2,10 @@ import { browser } from "webextension-polyfill-ts";
 import { XLogger } from "../lib/logger";
 import { SyncService } from "./sync.service";
 import { createSyncProvider } from "./sync-provider-factory";
+import {
+  CLAMP_MAX_SYNC_DEBOUNCE_MS,
+  DEFAULT_SYNC_DEBOUNCE_MS,
+} from "../constants/sync-config";
 import type {
   AnySyncConfig,
   LegacyGitHubConfig,
@@ -11,7 +15,6 @@ import { getDeviceHeaderValue } from "./git/shared";
 
 const SYNC_CONFIG_KEY = "syncConfig";
 const LEGACY_GITHUB_KEY = "githubConfig";
-
 export class SyncConfigService {
   private static instance: SyncConfigService;
   private syncService: SyncService;
@@ -61,17 +64,17 @@ export class SyncConfigService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       // Persist debounce if provided
-      if (typeof (config as any).debounceMs === "number") {
+      if (typeof config.debounceMs === "number") {
         const clamped = Math.max(
           0,
-          Math.min(3600000, Math.floor((config as any).debounceMs))
+          Math.min(CLAMP_MAX_SYNC_DEBOUNCE_MS, Math.floor(config.debounceMs))
         );
-        (config as any).debounceMs = clamped;
+        config.debounceMs = clamped;
         this.syncService.setDebounceMs(clamped);
       }
       // Persist autoSync if provided (default true)
-      if (typeof (config as any).autoSync === "boolean") {
-        this.syncService.setAutoSync((config as any).autoSync);
+      if (typeof config.autoSync === "boolean") {
+        this.syncService.setAutoSync(config.autoSync);
       } else {
         // default on if not specified
         this.syncService.setAutoSync(true);
@@ -94,6 +97,58 @@ export class SyncConfigService {
     }
   }
 
+  //convenience sync debounceMs
+  public async getSyncDebounceMs(): Promise<{
+    success: boolean;
+    debounceMs: number;
+    error?: string;
+  }> {
+    const { config, success, error } = await this.getSyncConfig();
+    if (config && success) {
+      return {
+        success,
+        debounceMs: config.debounceMs || DEFAULT_SYNC_DEBOUNCE_MS,
+        error,
+      };
+    }
+    return { success, error, debounceMs: DEFAULT_SYNC_DEBOUNCE_MS };
+  }
+  /**
+   * convenience for sync debounceMs
+   */
+  public async setSyncDebounceMs(val_ms: number | null | undefined): Promise<{
+    success: boolean;
+    debounceMs: number;
+    error?: string;
+  }> {
+    const {
+      config,
+      success: readOk,
+      error: readError,
+    } = await this.getSyncConfig();
+
+    if (!readOk) {
+      XLogger.error("read config error on setSyncDebounceMs");
+      return {
+        success: false,
+        debounceMs: DEFAULT_SYNC_DEBOUNCE_MS,
+        error: readError,
+      };
+    }
+
+    const ms =
+      val_ms && typeof val_ms === "number" && Number.isFinite(val_ms)
+        ? val_ms
+        : DEFAULT_SYNC_DEBOUNCE_MS;
+    const updateConfig = { ...config, debounceMs: ms };
+    const { success, error } = await this.configureSyncProvider(updateConfig);
+    return {
+      success: success && readOk,
+      debounceMs: ms,
+      error: error,
+    };
+  }
+
   public async removeSyncProvider(): Promise<{
     success: boolean;
     error?: string;
@@ -110,11 +165,14 @@ export class SyncConfigService {
               v &&
               typeof v === "object" &&
               (v as any).id &&
+              (v as any).id?.startsWith?.("drawing:") &&
               (v as any).sync === true
           );
-          for (const d of synced) {
+          for (const drawing of synced) {
             try {
-              await currentProvider.deleteDrawing(d as any);
+              //remove sync fields, could resolve incorrect drawing status
+              // await currentProvider.deleteDrawing(d as any);
+              console.debug("todo: remove sync fields");
             } catch {
               // best-effort: ignore per-drawing delete failures
             }

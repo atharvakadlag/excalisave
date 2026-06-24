@@ -7,6 +7,9 @@ import {
   MessageType,
   SaveDrawingMessage,
   SaveNewDrawingMessage,
+  SetSyncAutoSyncMessage,
+  SetSyncDebounceMessage,
+  SyncDrawingMessage,
 } from "../constants/message.types";
 import { getDeviceHeaderValue } from "../services/git/shared";
 import { IDrawing } from "../interfaces/drawing.interface";
@@ -41,7 +44,10 @@ browser.runtime.onMessage.addListener(
       | CleanupFilesMessage
       | DeleteDrawingMessage
       | GetChangeHistoryMessage
+      | SetSyncDebounceMessage
+      | SetSyncAutoSyncMessage
       | ConfigureSyncProviderMessage
+      | SyncDrawingMessage
       | any,
     _sender: any
   ) => {
@@ -293,19 +299,12 @@ browser.runtime.onMessage.addListener(
           return { success: true };
 
         case MessageType.SET_SYNC_DEBOUNCE:
-          const ms = Math.max(
-            0,
-            Math.min(600000, Math.floor(message.payload?.debounceMs || 0))
-          );
-          syncService.setDebounceMs(ms);
-          try {
-            const cur = await browser.storage.local.get("syncConfig");
-            if (cur && cur.syncConfig) {
-              await browser.storage.local.set({
-                syncConfig: { ...cur.syncConfig, debounceMs: ms },
-              });
-            }
-          } catch {}
+          // const { debounceMs: ms } = message.payload?.debounceMs
+          //   ? await syncConfigService.setSyncDebounceMs(
+          //       message.payload.debounceMs
+          //     )
+          //   : await syncConfigService.getSyncDebounceMs();
+          syncService.setDebounceMs(message.payload.debounceMs);
           return { success: true };
 
         case MessageType.SET_SYNC_AUTOSYNC:

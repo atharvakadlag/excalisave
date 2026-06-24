@@ -24,6 +24,10 @@ import {
 import { ChangeHistoryItem } from "../../interfaces/sync.interface";
 import { IDrawing } from "../../interfaces/drawing.interface";
 import "./SyncSettings.scss";
+import {
+  CLAMP_MAX_SYNC_DEBOUNCE_MS,
+  DEFAULT_SYNC_DEBOUNCE_MS,
+} from "../../constants/sync-config";
 
 interface SyncSettingsProps {
   onBack: () => void;
@@ -202,7 +206,10 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
   };
 
   const handleApplyDebounce = async (ms: number) => {
-    const clamped = Math.max(0, Math.min(600000, Math.floor(ms)));
+    const clamped = Math.max(
+      0,
+      Math.min(CLAMP_MAX_SYNC_DEBOUNCE_MS, Math.floor(ms))
+    );
     try {
       await browser.runtime.sendMessage({
         type: MessageType.SET_SYNC_DEBOUNCE,
@@ -636,7 +643,8 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       Apply
                     </Button>
                     <Text size="1" color="gray">
-                      0 disables. Default 60s. Max 1hr
+                      0 disables. Default 60s. Max{" "}
+                      {CLAMP_MAX_SYNC_DEBOUNCE_MS / 1000 / 60 / 60}hr
                     </Text>
                   </Flex>
                 </Box>
