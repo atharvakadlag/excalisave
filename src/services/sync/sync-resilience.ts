@@ -16,6 +16,10 @@ export interface SyncHealth {
   lastError?: string;
 }
 
+/**
+ * connected locally isnt reliable enough, also check addEventListener
+ *
+ */
 export function isOnline(): boolean {
   // Primary signal from the browser
   if (
@@ -25,6 +29,16 @@ export function isOnline(): boolean {
     return navigator.onLine;
   }
   // If we can't tell, assume we can try (the request will surface real errors)
+  // // window.addEventListener('offline', () => {
+  //     console.log("The browser has detected it is offline.");
+  //     // Insert code here to change UI or disable buttons
+  // });
+  //
+  // window.addEventListener('online', () => {
+  //     console.log("The browser is back online.");
+  // });
+  //
+
   return true;
 }
 

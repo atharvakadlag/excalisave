@@ -4,4 +4,5 @@ import { ExcalidrawDataState } from "./excalidraw-data-state.interface";
 export type DrawingDataState = ExcalidrawDataState & {
   imageBase64?: string;
   viewBackgroundColor?: string;
+  sync?: boolean;
 };

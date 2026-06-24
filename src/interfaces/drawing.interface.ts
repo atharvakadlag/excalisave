@@ -7,12 +7,12 @@ export interface IDrawing {
   id: string;
   name: string;
   createdAt: string;
-  sync: boolean;
   imageBase64?: string;
   viewBackgroundColor?: string;
+  sync?: boolean;
   lastSyncAt?: string;
   lastSyncError?: string;
-  lastSyncedBy?: string;
+  lastSyncBy?: string;
   data: {
     excalidraw: string;
     excalidrawState: string;

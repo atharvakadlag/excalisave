@@ -122,7 +122,7 @@ export class SyncService {
         ...raw,
         lastSyncAt: ok ? now : raw.lastSyncAt,
         lastSyncError: ok ? undefined : errReason || raw.lastSyncError,
-        lastSyncedBy: ok ? await this.getDeviceName() : raw.lastSyncedBy,
+        lastSyncBy: ok ? await this.getDeviceName() : raw.lastSyncBy,
       } as any;
       await browser.storage.local.set({ [drawingId]: next });
     } catch {}
@@ -262,7 +262,7 @@ export class SyncService {
     // Strip local-only sync meta so it is not persisted to the remote blob
     delete (drawing as any).lastSyncAt;
     delete (drawing as any).lastSyncError;
-    delete (drawing as any).lastSyncedBy;
+    delete (drawing as any).lastSyncBy;
 
     try {
       const result = await withBackoff(

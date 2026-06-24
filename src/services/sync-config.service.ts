@@ -12,6 +12,7 @@ import type {
 } from "../interfaces/sync-config.interface";
 import type { SyncProvider } from "../interfaces/sync.interface";
 import { getDeviceHeaderValue } from "./git/shared";
+import { IDrawing } from "../interfaces/drawing.interface";
 
 const SYNC_CONFIG_KEY = "syncConfig";
 const LEGACY_GITHUB_KEY = "githubConfig";
@@ -132,15 +133,15 @@ export class SyncConfigService {
               (v as any).id &&
               (v as any).id?.startsWith?.("drawing:") &&
               (v as any).sync === true
-          );
+          ) as IDrawing[];
           for (const drawing of synced) {
             try {
               //remove sync fields, could resolve incorrect drawing status
-              // await currentProvider.deleteDrawing(d as any);
-              console.debug("todo: remove sync fields");
-            } catch {
-              // best-effort: ignore per-drawing delete failures
-            }
+              delete drawing.lastSyncAt;
+              delete drawing.lastSyncError;
+              delete drawing.lastSyncBy;
+              //leave sync incase just switching
+            } catch {}
           }
         } catch {
           // best-effort: ignore remote cleanup failures
