@@ -140,7 +140,7 @@ export class SyncConfigService {
               delete drawing.lastSyncAt;
               delete drawing.lastSyncError;
               delete drawing.lastSyncBy;
-              //leave sync incase just switching
+              delete drawing.sync;
             } catch {}
           }
         } catch {
