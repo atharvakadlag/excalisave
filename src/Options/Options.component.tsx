@@ -8,7 +8,7 @@ import {
   Theme,
   Button,
 } from "@radix-ui/themes";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { browser } from "webextension-polyfill-ts";
 import { ImpExp } from "../components/ImpExp/ImpExp.component";
 import SyncSettings from "../components/sync/SyncSettings";
@@ -16,28 +16,6 @@ import "./Options.styles.scss";
 
 export const Options: React.FC = () => {
   const [showSyncSettings, setShowSyncSettings] = useState(false);
-  const [menuPlacement, setMenuPlacement] = useState<"inline" | "floating">(
-    "floating"
-  );
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await browser.storage.local.get(
-          "excalisave_menu_placement"
-        );
-        const v = (res as any)?.excalisave_menu_placement;
-        if (v === "floating" || v === "inline") setMenuPlacement(v);
-      } catch {}
-    })();
-  }, []);
-
-  const applyMenuPlacement = async (v: "inline" | "floating") => {
-    setMenuPlacement(v);
-    try {
-      await browser.storage.local.set({ excalisave_menu_placement: v });
-    } catch {}
-  };
 
   if (showSyncSettings) {
     return <SyncSettings onBack={() => setShowSyncSettings(false)} />;
@@ -110,36 +88,6 @@ export const Options: React.FC = () => {
             >
               Configure Sync Settings
             </Button>
-          </Box>
-
-          <Box px="4" mt="8">
-            <Heading as="h3" size={"5"} style={{ paddingBottom: "10px" }}>
-              Menu Placement:
-            </Heading>
-            <Text size={"2"} as="p" style={{ lineHeight: 1.1 }}>
-              Choose how the Excalisave menu appears when you click the
-              "Excalisave" button next to the diagram title.
-            </Text>
-            <br />
-            <Flex gap="2">
-              <Button
-                variant={menuPlacement === "inline" ? "solid" : "soft"}
-                onClick={() => applyMenuPlacement("inline")}
-              >
-                Inline (under button)
-              </Button>
-              <Button
-                variant={menuPlacement === "floating" ? "solid" : "soft"}
-                onClick={() => applyMenuPlacement("floating")}
-              >
-                Floating (old native popup)
-              </Button>
-            </Flex>
-            <Text size="1" color="gray" mt="2" as="p">
-              Inline: opens a positioned popup directly under the button (new
-              behavior). Floating: uses the browser’s native popup (pre a21217b
-              behavior).
-            </Text>
           </Box>
         </Container>
       </Box>
