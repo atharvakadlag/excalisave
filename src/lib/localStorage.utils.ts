@@ -18,8 +18,3 @@ export function setLocalStorageItemAndNotify(key: string, value: string) {
   localStorage.setItem(key, value);
   dispatchLocalStorageChange(key, value);
 }
-
-export function removeLocalStorageItemAndNotify(key: string) {
-  localStorage.removeItem(key);
-  dispatchLocalStorageChange(key, null);
-}

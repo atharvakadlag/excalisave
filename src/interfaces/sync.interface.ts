@@ -1,7 +1,7 @@
 import { IDrawing } from "./drawing.interface";
 
 export interface ChangeHistoryItem {
-  id: string;
+  id: string; // Git commit SHA, not a UUID
   message: string;
   author: {
     name: string;

@@ -19,7 +19,7 @@ import {
 import React, { ReactElement, useEffect, useState } from "react";
 import { IDrawing } from "../../interfaces/drawing.interface";
 import "./Navbar.styles.scss";
-import { DrawingStore } from "../../lib/drawing-store";
+import { DrawingStore } from "../../lib/drawingStore";
 
 const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
@@ -189,8 +189,6 @@ export function NavBar({
               Duplicate
             </DropdownMenu.Item>
           )}
-          {/* <DropdownMenu.Separator /> */}
-          {/* <DropdownMenu.Item>Add to favorites</DropdownMenu.Item> */}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
 

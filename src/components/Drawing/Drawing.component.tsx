@@ -15,11 +15,14 @@ import {
 } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { IDrawing } from "../../interfaces/drawing.interface";
+import { PLACEHOLDER_IMAGE } from "../../lib/constants";
 import "./Drawing.styles.scss";
 import { AddToFolderModal } from "../AddToFolder/AddToFolder.component";
 import { Folder } from "../../interfaces/folder.interface";
 
 const DialogDescription = Dialog.Description as any;
+
+import type { UUID } from "../../lib/utils/id.utils";
 
 type DrawingProps = {
   favorite?: boolean;
@@ -28,18 +31,18 @@ type DrawingProps = {
   inExcalidrawPage: boolean;
   drawing: IDrawing;
   folders: Folder[];
-  folderIdSelected?: string;
-  onClick: (id: string) => void;
-  onRenameDrawing?: (id: string, newName: string) => void;
-  onDeleteDrawing?: (id: string) => void;
+  folderIdSelected?: UUID;
+  onClick: (id: UUID) => void;
+  onRenameDrawing?: (id: UUID, newName: string) => void;
+  onDeleteDrawing?: (id: UUID) => void;
 
-  onAddToFavorites?: (id: string) => void;
-  onRemoveFromFavorites?: (id: string) => void;
+  onAddToFavorites?: (id: UUID) => void;
+  onRemoveFromFavorites?: (id: UUID) => void;
 
-  onAddToFolder: (drawingId: string, folderId: string) => void;
-  onRemoveFromFolder: (drawingId: string, folderId: string) => void;
+  onAddToFolder: (drawingId: UUID, folderId: UUID) => void;
+  onRemoveFromFolder: (drawingId: UUID, folderId: UUID) => void;
 
-  onToggleSync?: (id: string, sync: boolean) => void;
+  onToggleSync?: (id: UUID, sync: boolean) => void;
 };
 
 export function Drawing(props: DrawingProps) {
@@ -71,12 +74,8 @@ export function Drawing(props: DrawingProps) {
             position: "relative",
             backgroundColor: props.drawing.viewBackgroundColor || "#fff",
           }}
-          src={
-            props.drawing.imageBase64
-              ? props.drawing.imageBase64
-              : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
-          }
-        />
+          src={props.drawing.imageBase64 || PLACEHOLDER_IMAGE}
+         alt={PLACEHOLDER_IMAGE}/>
         {props.drawing.sync && (
           <CheckCircledIcon
             className="Drawing__sync-indicator"
@@ -163,7 +162,6 @@ export function Drawing(props: DrawingProps) {
               </DropdownMenu.Item>
               <DropdownMenu.Separator />
               <DropdownMenu.Item
-                disabled={!props.inExcalidrawPage}
                 color="red"
                 onClick={() => setDeleteModalOpen(true)}
               >

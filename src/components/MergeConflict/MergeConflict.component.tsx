@@ -2,6 +2,7 @@ import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { Button, Callout, Dialog, Flex, Grid, Text } from "@radix-ui/themes";
 import React from "react";
 import { IDrawing } from "../../interfaces/drawing.interface";
+import { PLACEHOLDER_IMAGE } from "../../lib/constants";
 import "./MergeConflict.styles.scss";
 
 const DialogDescription = Dialog.Description as any;
@@ -54,7 +55,7 @@ export function MergeConflictDialog(props: MergeConflictProps) {
               <img
                 src={
                   props.localDrawing.imageBase64 ||
-                  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
+                  PLACEHOLDER_IMAGE
                 }
                 alt="Local version preview"
                 style={{
@@ -85,7 +86,7 @@ export function MergeConflictDialog(props: MergeConflictProps) {
               <img
                 src={
                   props.remoteDrawing.imageBase64 ||
-                  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
+                  PLACEHOLDER_IMAGE
                 }
                 alt="Remote version preview"
                 style={{

@@ -50,7 +50,7 @@ module.exports = {
     "execute-scripts/sendDrawingDataToSave": path.join(
       sourcePath,
       "execute-scripts",
-      "send-drawing-data-to-save.ts"
+      "sendDrawingDataToSave.ts"
     ),
     "execute-scripts/loadDrawing": path.join(
       sourcePath,
@@ -65,27 +65,32 @@ module.exports = {
     "execute-scripts/export-store": path.join(
       sourcePath,
       "execute-scripts",
-      "export-store.ts"
+      "exportStore.ts"
     ),
     "execute-scripts/delete-unused-files": path.join(
       sourcePath,
       "execute-scripts",
-      "delete-unused-files.ts"
+      "deleteUnusedFiles.ts"
     ),
     "execute-scripts/load-store": path.join(
       sourcePath,
       "execute-scripts",
-      "load-store.ts"
+      "loadStore.ts"
+    ),
+    "execute-scripts/shared-link-import": path.join(
+      sourcePath,
+      "execute-scripts",
+      "sharedLinkImport.ts"
+    ),
+    "execute-scripts/room-join": path.join(
+      sourcePath,
+      "execute-scripts",
+      "roomJoin.ts"
     ),
     "content-scripts/listenDrawingUpdates": path.join(
       sourcePath,
       "ContentScript",
       "listenDrawingUpdates.ts"
-    ),
-    "content-scripts/addOverwriteAction": path.join(
-      sourcePath,
-      "ContentScript",
-      "addOverwriteAction.ts"
     ),
     popup: path.join(sourcePath, "Popup", "index.tsx"),
     options: path.join(sourcePath, "Options", "index.tsx"),
@@ -201,7 +206,6 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: "src/assets", to: "assets" },
-        { from: "src/external-libs/excalidraw.production.min.js", to: "libs" },
         { from: "node_modules/react/umd/react.production.min.js", to: "libs" },
         {
           from: "node_modules/react-dom/umd/react-dom.production.min.js",
@@ -215,7 +219,6 @@ module.exports = {
           from: "node_modules/@excalidraw/excalidraw/dist/excalidraw-assets/",
           globOptions: {
             dot: true,
-            // The built lib external-libs/exccalidraw.production.js is one single file, no need to copy chunks.
             ignore: ["**/vendor-*.js*", "**/locales/**"],
           },
           to: "assets/excalidraw-assets",
@@ -229,8 +232,6 @@ module.exports = {
     minimizer: [
       new TerserPlugin({
         parallel: true,
-        // Already minimized, and generates error if minified again.
-        exclude: /excalidraw\.production\.min\.js/,
         terserOptions: {
           format: {
             comments: false,

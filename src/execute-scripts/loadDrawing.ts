@@ -1,22 +1,22 @@
 import {
-  getDrawingDataState,
   getScriptParams,
-} from "../ContentScript/content-script.utils";
-import { MessageType, SaveDrawingMessage } from "../constants/message.types";
+} from "../ContentScript/contentScript.utils";
 import { IDrawing } from "../interfaces/drawing.interface";
-import { createStore, entries, set, values } from "idb-keyval";
+import { createStore, entries, set } from "idb-keyval";
 import { DRAWING_ID_KEY_LS, DRAWING_TITLE_KEY_LS } from "../lib/constants";
 import { XLogger } from "../lib/logger";
-import { As } from "../lib/types.utils";
+import { saveCurrentDrawingToStorage } from "../lib/utils/drawing-message.utils";
 import { FileId } from "@excalidraw/excalidraw/types/element/types";
 import { BinaryFileData } from "@excalidraw/excalidraw/types/types";
-const { browser } = require("webextension-polyfill-ts");
+import { browser } from "webextension-polyfill-ts";
 
-// Were images are stored: https://github.com/excalidraw/excalidraw/blob/e8def8da8d5fcf9445aebdd996de3fee4cecf7ef/excalidraw-app/data/LocalData.ts#L24
+// Where images are stored: https://github.com/excalidraw/excalidraw/blob/e8def8da8d5fcf9445aebdd996de3fee4cecf7ef/excalidraw-app/data/LocalData.ts#L24
 const filesStore = createStore("files-db", "files-store");
 
+import type { UUID } from "../lib/utils/id.utils";
+
 type ScriptParams = {
-  id: string;
+  id: UUID;
 };
 
 (async () => {
@@ -46,29 +46,8 @@ type ScriptParams = {
   });
 
   // Save data before load new drawing if there is a current drawing
-  const currentDrawingId = localStorage.getItem(DRAWING_ID_KEY_LS);
-
   const url = new URL(window.location.href);
-
-  if (currentDrawingId) {
-    XLogger.info("Saving current drawing before load new drawing");
-    const drawingDataState = await getDrawingDataState();
-
-    await browser.runtime.sendMessage(
-      As<SaveDrawingMessage>({
-        type: MessageType.SAVE_DRAWING,
-        payload: {
-          id: currentDrawingId,
-          excalidraw: drawingDataState.excalidraw,
-          excalidrawState: drawingDataState.excalidrawState,
-          versionFiles: drawingDataState.versionFiles,
-          versionDataState: drawingDataState.versionDataState,
-          imageBase64: drawingDataState.imageBase64,
-          viewBackgroundColor: drawingDataState.viewBackgroundColor,
-        },
-      })
-    );
-  }
+  await saveCurrentDrawingToStorage();
 
   // Load new drawing
   const response = await browser.storage.local.get(loadDrawingId);
@@ -84,9 +63,24 @@ type ScriptParams = {
   const { excalidraw, excalidrawState, versionFiles, versionDataState } =
     drawingData.data;
 
-  // Seems Excalidraw saves data to localStorage before reload page(I guess when there is something pending).
-  // To avoid it overwrite our data,  save to localStorage on this event instead.
-  // ! TODO: Probably need to move the logic of saving data before switch to here.
+  // If this drawing has a room URL, navigate directly to the room
+  // so the user reconnects to the live collaboration session.
+  // When switching between two room URLs on the same origin, the browser
+  // treats it as a hash-only change and won't reload — so we force it.
+  if (drawingData.roomUrl) {
+    localStorage.setItem(DRAWING_ID_KEY_LS, loadDrawingId);
+    localStorage.setItem(DRAWING_TITLE_KEY_LS, drawingData.name);
+    window.location.href = drawingData.roomUrl;
+    // If the URL change was just a hash change (same origin), the page
+    // won't navigate — force a full reload so Excalidraw reinitializes.
+    // If it was a cross-origin navigation, this line never executes.
+    window.location.reload();
+    return;
+  }
+
+  // Excalidraw writes to localStorage on beforeunload, which can overwrite
+  // our data. Setting the new drawing's data in beforeunload ensures we
+  // write last, after Excalidraw's own handler.
   window.addEventListener("beforeunload", () => {
     localStorage.setItem("excalidraw", excalidraw);
     localStorage.setItem("excalidraw-state", excalidrawState);

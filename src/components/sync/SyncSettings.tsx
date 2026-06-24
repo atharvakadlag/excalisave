@@ -23,6 +23,7 @@ import {
 } from "../../constants/message.types";
 import { ChangeHistoryItem } from "../../interfaces/sync.interface";
 import { IDrawing } from "../../interfaces/drawing.interface";
+import type { UUID } from "../../lib/utils/id.utils";
 import "./SyncSettings.scss";
 
 interface SyncSettingsProps {
@@ -39,7 +40,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
   const [isLoadingCommits, setIsLoadingCommits] = useState(false);
   const [commitError, setCommitError] = useState<string>("");
   const [drawings, setDrawings] = useState<IDrawing[]>([]);
-  const [selectedDrawings, setSelectedDrawings] = useState<string[]>([]);
+  const [selectedDrawings, setSelectedDrawings] = useState<UUID[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   useEffect(() => {
@@ -47,7 +48,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       try {
         setIsLoading(true);
         const response = await browser.runtime.sendMessage({
-          type: "GET_GITHUB_CONFIG",
+          type: MessageType.GET_GITHUB_CONFIG,
         });
 
         if (response.success && response.config) {
@@ -57,10 +58,10 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
 
           // Check if sync is initialized
           const authResponse = await browser.runtime.sendMessage({
-            type: "CHECK_GITHUB_AUTH",
+            type: MessageType.CHECK_GITHUB_AUTH,
           });
           setIsInitialized(
-            authResponse.success && authResponse.isAuthenticated
+            authResponse.success && authResponse.isAuthenticated,
           );
 
           // Load commit history if GitHub is configured
@@ -76,7 +77,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
         // Load drawings
         const storage = await browser.storage.local.get();
         const drawings: IDrawing[] = Object.values(storage).filter(
-          (o) => o?.id?.startsWith?.("drawing:")
+          (o) => o?.id?.startsWith?.("drawing:"),
         );
 
         if (drawings) {
@@ -124,7 +125,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       setIsLoading(true);
 
       const response = await browser.runtime.sendMessage({
-        type: "REMOVE_GITHUB_PROVIDER",
+        type: MessageType.REMOVE_GITHUB_PROVIDER,
       });
 
       if (!response.success) {
@@ -149,7 +150,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       setIsLoading(true);
 
       const response = await browser.runtime.sendMessage({
-        type: "CONFIGURE_GITHUB_PROVIDER",
+        type: MessageType.CONFIGURE_GITHUB_PROVIDER,
         payload: {
           token: githubToken,
           repoOwner: repoOwner,
@@ -165,11 +166,11 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       }
 
       const authResponse = await browser.runtime.sendMessage({
-        type: "CHECK_GITHUB_AUTH",
+        type: MessageType.CHECK_GITHUB_AUTH,
       });
       if (!authResponse.success || !authResponse.isAuthenticated) {
         setError(
-          "Failed to authenticate with GitHub. Please check your token and repository settings."
+          "Failed to authenticate with GitHub. Please check your token and repository settings.",
         );
         setIsInitialized(false);
         return;
@@ -182,7 +183,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to initialize GitHub sync"
+          : "Failed to initialize GitHub sync",
       );
       setIsInitialized(false);
     } finally {
@@ -221,13 +222,14 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                 <Heading as="h1" size="7" mb="1">
                   Sync Settings
                 </Heading>
+                <Badge color="orange">Beta</Badge>
                 <Badge color={isInitialized ? "green" : "red"}>
                   {isInitialized ? "Initialized" : "Not Initialized"}
                 </Badge>
               </Flex>
               <Text size="2" as="p" color="gray">
-                Configure GitHub integration, manage synced files, and view
-                history.
+                Configure GitHub integration, manage synced files, and view history. This feature is still in beta — you
+                may encounter occasional bugs.
               </Text>
             </Box>
           </Flex>

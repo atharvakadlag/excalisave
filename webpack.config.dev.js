@@ -30,7 +30,6 @@ const extensionReloaderPlugin = new ExtensionReloader({
       "execute-scripts/load-store",
       "execute-scripts/delete-unused-files",
       "content-scripts/listenDrawingUpdates",
-      "content-scripts/addOverwriteAction",
     ],
     background: "background",
     extensionPage: [
@@ -38,7 +37,6 @@ const extensionReloaderPlugin = new ExtensionReloader({
       "options",
       "execute-scripts/sendDrawingDataToSave",
       "content-scripts/listenDrawingUpdates",
-      "content-scripts/addOverwriteAction",
     ],
   },
 });
@@ -61,7 +59,7 @@ module.exports = {
     "execute-scripts/sendDrawingDataToSave": path.join(
       sourcePath,
       "execute-scripts",
-      "send-drawing-data-to-save.ts"
+      "sendDrawingDataToSave.ts"
     ),
     "execute-scripts/loadDrawing": path.join(
       sourcePath,
@@ -76,27 +74,22 @@ module.exports = {
     "execute-scripts/export-store": path.join(
       sourcePath,
       "execute-scripts",
-      "export-store.ts"
+      "exportStore.ts"
     ),
     "execute-scripts/delete-unused-files": path.join(
       sourcePath,
       "execute-scripts",
-      "delete-unused-files.ts"
+      "deleteUnusedFiles.ts"
     ),
     "execute-scripts/load-store": path.join(
       sourcePath,
       "execute-scripts",
-      "load-store.ts"
+      "loadStore.ts"
     ),
     "content-scripts/listenDrawingUpdates": path.join(
       sourcePath,
       "ContentScript",
       "listenDrawingUpdates.ts"
-    ),
-    "content-scripts/addOverwriteAction": path.join(
-      sourcePath,
-      "ContentScript",
-      "addOverwriteAction.ts"
     ),
     popup: path.join(sourcePath, "Popup", "index.tsx"),
     options: path.join(sourcePath, "Options", "index.tsx"),
@@ -210,7 +203,7 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: "src/assets", to: "assets" },
-        { from: "src/external-libs", to: "libs" },
+
         { from: "node_modules/react/umd/react.production.min.js", to: "libs" },
         {
           from: "node_modules/react-dom/umd/react-dom.production.min.js",

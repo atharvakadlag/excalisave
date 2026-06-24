@@ -1,4 +1,5 @@
 import { browser } from "webextension-polyfill-ts";
+import type { UUID } from "../lib/utils/id.utils";
 import { SyncProvider, ChangeHistoryItem } from "../interfaces/sync.interface";
 import { XLogger } from "../lib/logger";
 import { IDrawing } from "../interfaces/drawing.interface";
@@ -21,11 +22,12 @@ export class SyncService {
     return SyncService.instance;
   }
 
-  public setProvider(provider: SyncProvider): void {
+  public setProvider(provider: SyncProvider | null): void {
     this.provider = provider;
   }
 
-  public async initialize(drawingsToSync: string[]): Promise<void> {
+  public async initialize(drawingsToSync: UUID[]): Promise<void> {
+    if (!this.provider) throw new Error("Sync provider not set");
     await this.provider.initialize();
     await this.syncFiles();
     for (const drawingId of drawingsToSync) {
@@ -33,19 +35,25 @@ export class SyncService {
     }
   }
 
-  public async addSyncToDrawing(drawingId: string): Promise<void> {
+  public async addSyncToDrawing(drawingId: UUID): Promise<void> {
     const drawing = (await browser.storage.local.get(drawingId))[
       drawingId
     ] as IDrawing;
 
     if (!drawing) return;
 
-    // We set these to null to avoid conflicts with the sync provider
-    drawing.sync = true;
-    drawing.data.versionDataState = null;
-    drawing.data.versionFiles = null;
+    // Clone and nullify version fields to avoid conflicts with the sync provider
+    const updatedDrawing: IDrawing = {
+      ...drawing,
+      sync: true,
+      data: {
+        ...drawing.data,
+        versionDataState: null,
+        versionFiles: null,
+      },
+    };
 
-    await browser.storage.local.set({ [drawingId]: drawing });
+    await browser.storage.local.set({ [drawingId]: updatedDrawing });
   }
 
   public async isAuthenticated(): Promise<boolean> {
@@ -68,13 +76,19 @@ export class SyncService {
     if (!drawing.sync) return { success: false };
     if (!(await this.isAuthenticated())) return { success: false };
 
-    // We set these to null to avoid conflicts with the sync provider
-    drawing.sync = true;
-    drawing.data.versionDataState = null;
-    drawing.data.versionFiles = null;
+    // Clone and nullify version fields to avoid conflicts with the sync provider
+    const drawingToSync: IDrawing = {
+      ...drawing,
+      sync: true,
+      data: {
+        ...drawing.data,
+        versionDataState: null,
+        versionFiles: null,
+      },
+    };
 
     // Attempt to update the drawing in the provider
-    const result = await this.provider.updateDrawing(drawing);
+    const result = await this.provider.updateDrawing(drawingToSync);
 
     // Handle boolean result (success/failure)
     if (typeof result === "boolean") {

@@ -3,16 +3,17 @@ import { Scripting, browser } from "webextension-polyfill-ts";
 import { TabUtils } from "../../lib/utils/tab.utils";
 import { DRAWING_ID_KEY_LS } from "../../lib/constants";
 import { XLogger } from "../../lib/logger";
+import type { UUID } from "../../lib/utils/id.utils";
 
 export function useCurrentDrawingId(): {
-  currentDrawingId: string;
+  currentDrawingId: UUID;
   isLiveCollaboration: boolean;
   inExcalidrawPage: boolean;
-  setCurrentDrawingId: (id: string) => void;
+  setCurrentDrawingId: (id: UUID) => void;
   setIsLiveCollaboration: (isLive: boolean) => void;
 } {
   const [inExcalidrawPage, setInExcalidrawPage] = useState<boolean>(true);
-  const [currentDrawingId, setCurrentDrawingId] = useState<string>(undefined);
+  const [currentDrawingId, setCurrentDrawingId] = useState<UUID>(undefined);
   const [isLiveCollaboration, setIsLiveCollaboration] =
     useState<boolean>(false);
 
