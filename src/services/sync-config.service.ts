@@ -113,41 +113,6 @@ export class SyncConfigService {
     }
     return { success, error, debounceMs: DEFAULT_SYNC_DEBOUNCE_MS };
   }
-  /**
-   * convenience for sync debounceMs
-   */
-  public async setSyncDebounceMs(val_ms: number | null | undefined): Promise<{
-    success: boolean;
-    debounceMs: number;
-    error?: string;
-  }> {
-    const {
-      config,
-      success: readOk,
-      error: readError,
-    } = await this.getSyncConfig();
-
-    if (!readOk) {
-      XLogger.error("read config error on setSyncDebounceMs");
-      return {
-        success: false,
-        debounceMs: DEFAULT_SYNC_DEBOUNCE_MS,
-        error: readError,
-      };
-    }
-
-    const ms =
-      val_ms && typeof val_ms === "number" && Number.isFinite(val_ms)
-        ? val_ms
-        : DEFAULT_SYNC_DEBOUNCE_MS;
-    const updateConfig = { ...config, debounceMs: ms };
-    const { success, error } = await this.configureSyncProvider(updateConfig);
-    return {
-      success: success && readOk,
-      debounceMs: ms,
-      error: error,
-    };
-  }
 
   public async removeSyncProvider(): Promise<{
     success: boolean;
@@ -242,20 +207,31 @@ export class SyncConfigService {
    * This is needed because MV3 service workers can be suspended; on wake-up the
    * singletons start with no provider until configure runs again.
    */
-  public async ensureProvider(): Promise<void> {
+  public async ensureProvider(opt?: {
+    debounceMs?: number;
+    autoSync?: boolean;
+  }): Promise<void> {
     const s = this.syncService as any;
     if (s.provider) return;
     const res = await this.getSyncConfig();
     if (res.success && res.config) {
       try {
         const cfg: any = res.config;
-        if (typeof cfg.debounceMs === "number") {
-          this.syncService.setDebounceMs(cfg.debounceMs);
-        }
-        if (typeof cfg.autoSync === "boolean") {
-          this.syncService.setAutoSync(cfg.autoSync);
+        if (opt?.debounceMs && typeof opt.debounceMs === "number") {
+          this.syncService.setDebounceMs(opt.debounceMs);
         } else {
-          this.syncService.setAutoSync(true);
+          if (typeof cfg.debounceMs === "number") {
+            this.syncService.setDebounceMs(cfg.debounceMs);
+          }
+        }
+        if (opt?.autoSync && typeof opt.autoSync === "boolean") {
+          this.syncService.setAutoSync(opt.autoSync);
+        } else {
+          if (typeof cfg.autoSync === "boolean") {
+            this.syncService.setAutoSync(cfg.autoSync);
+          } else {
+            this.syncService.setAutoSync(true);
+          }
         }
         const device = getDeviceHeaderValue();
         const provider = createSyncProvider(cfg, device);

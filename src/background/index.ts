@@ -295,25 +295,15 @@ browser.runtime.onMessage.addListener(
           return { success: true };
 
         case MessageType.SET_SYNC_DEBOUNCE:
-          // const { debounceMs: ms } = message.payload?.debounceMs
-          //   ? await syncConfigService.setSyncDebounceMs(
-          //       message.payload.debounceMs
-          //     )
-          //   : await syncConfigService.getSyncDebounceMs();
-          syncService.setDebounceMs(message.payload.debounceMs);
+          await syncConfigService.ensureProvider({
+            debounceMs: message.payload.debounceMs,
+          });
           return { success: true };
-
         case MessageType.SET_SYNC_AUTOSYNC:
           const as = !!message.payload?.autoSync;
-          syncService.setAutoSync(as);
-          try {
-            const cur = await browser.storage.local.get("syncConfig");
-            if (cur && cur.syncConfig) {
-              await browser.storage.local.set({
-                syncConfig: { ...cur.syncConfig, autoSync: as },
-              });
-            }
-          } catch {}
+          await syncConfigService.ensureProvider({
+            autoSync: as,
+          });
           return { success: true };
 
         default:
