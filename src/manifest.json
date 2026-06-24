@@ -56,10 +56,6 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "popup.html",
-        "js/*",
-        "css/*",
-        "libs/*",
         "assets/*"
       ],
       "matches": [

@@ -51,20 +51,6 @@ const DialogDescription = Dialog.Description as any;
 const CalloutText = Callout.Text as any;
 
 const Popup: React.FC = () => {
-  // Announce to any host page (e.g. the positioned iframe overlay created by the
-  // "Excalisave" button next to the diagram title on excalidraw.com) that the
-  // popup UI has mounted successfully. The host uses this to reveal the iframe
-  // only when our real content is ready, avoiding the browser's error/sad-face
-  // document when the resource is temporarily unavailable (e.g. extension not
-  // reloaded after manifest changes).
-  React.useEffect(() => {
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ __excalisave: "popup-ready" }, "*");
-      }
-    } catch {}
-  }, []);
-
   const [drawings, setDrawings] = React.useState<IDrawing[]>([]);
   const { favorites, addToFavorites, removeFromFavorites } = useFavorites();
   const {
@@ -98,24 +84,6 @@ const Popup: React.FC = () => {
     remoteDrawing: IDrawing;
   } | null>(null);
   const syncService = SyncService.getInstance();
-
-  // Close helper: supports multiple display modes without breaking the tab.
-  // - If rendered in an iframe/overlay (e.g. the positioned one under the canvas button),
-  //   postMessage to let the host page tear it down.
-  // - Otherwise (normal action popup), window.close().
-  const closeThisPopup = React.useCallback(() => {
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ __excalisave: "close-popup" }, "*");
-        return;
-      }
-      window.close();
-    } catch {
-      try {
-        window.close();
-      } catch {}
-    }
-  }, []);
 
   useEffect(() => {
     getRestorePoint()
@@ -345,18 +313,18 @@ const Popup: React.FC = () => {
 
   const handleCreateNewDrawing = async (name: string, sync: boolean = true) => {
     await DrawingStore.saveNewDrawing({ name, sync });
-    closeThisPopup();
+    window.close();
   };
 
   const handleSaveCurrentDrawing = async () => {
     await DrawingStore.saveCurrentDrawing();
-    closeThisPopup();
+    window.close();
   };
 
   const handleNewDrawing = async () => {
     await DrawingStore.newDrawing();
     setCurrentDrawingId(undefined);
-    closeThisPopup();
+    window.close();
   };
 
   const handleAddToFavorites = async (drawingId: string) => {
