@@ -1,0 +1,7 @@
+[tools]
+node = "20"
+yarn = "latest"
+
+[settings]
+# Recommended: ignore legacy files if you want to force Node 20
+legacy_version_file = false

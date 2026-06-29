@@ -2,7 +2,12 @@ import {
   DotsHorizontalIcon,
   HeartFilledIcon,
   CheckCircledIcon,
+  ExclamationTriangleIcon,
 } from "@radix-ui/react-icons";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 import {
   Box,
   Button,
@@ -40,6 +45,7 @@ type DrawingProps = {
   onRemoveFromFolder: (drawingId: string, folderId: string) => void;
 
   onToggleSync?: (id: string, sync: boolean) => void;
+  onRetrySync?: (id: string) => void;
 };
 
 export function Drawing(props: DrawingProps) {
@@ -93,6 +99,24 @@ export function Drawing(props: DrawingProps) {
             }}
           />
         )}
+        {props.drawing.sync && props.drawing.lastSyncError && (
+          <span
+            title={props.drawing.lastSyncError}
+            style={{ position: "absolute", top: "8px", right: "28px" }}
+          >
+            <ExclamationTriangleIcon
+              className="Drawing__sync-error"
+              width="16"
+              height="16"
+              style={{
+                color: "#e5484d",
+                backgroundColor: "white",
+                borderRadius: "50%",
+                padding: "2px",
+              }}
+            />
+          </span>
+        )}
 
         <Flex justify="between" align="center" pr="1" pl="1">
           <Text
@@ -110,6 +134,18 @@ export function Drawing(props: DrawingProps) {
           >
             {props.drawing.name}
           </Text>
+          {props.drawing.sync && props.drawing.lastSyncAt && (
+            <Text
+              size="1"
+              color="gray"
+              style={{ marginLeft: 6, whiteSpace: "nowrap" }}
+              title={`Last sync (absolute): ${
+                props.drawing.lastSyncAt
+              }\nRelative: ${dayjs(props.drawing.lastSyncAt).fromNow()}`}
+            >
+              {dayjs(props.drawing.lastSyncAt).fromNow()}
+            </Text>
+          )}
           {props.favorite === true && (
             <HeartFilledIcon
               className="Drawing__favorite"
@@ -161,6 +197,13 @@ export function Drawing(props: DrawingProps) {
               >
                 {props.drawing.sync ? "Disable sync" : "Enable sync"}
               </DropdownMenu.Item>
+              {props.drawing.sync && props.onRetrySync && (
+                <DropdownMenu.Item
+                  onClick={() => props.onRetrySync?.(props.drawing.id)}
+                >
+                  Retry sync now
+                </DropdownMenu.Item>
+              )}
               <DropdownMenu.Separator />
               <DropdownMenu.Item
                 disabled={!props.inExcalidrawPage}

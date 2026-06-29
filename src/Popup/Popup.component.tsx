@@ -441,6 +441,14 @@ const Popup: React.FC = () => {
             onAddToFolder={addDrawingToFolder}
             onRemoveFromFolder={removeDrawingFromFolder}
             onToggleSync={handleToggleSync}
+            onRetrySync={async (id: string) => {
+              try {
+                await browser.runtime.sendMessage({
+                  type: MessageType.SYNC_DRAWING,
+                  payload: { id },
+                } as SyncDrawingMessage);
+              } catch {}
+            }}
           />
         ))}
       </Grid>
@@ -472,8 +480,11 @@ const Popup: React.FC = () => {
       )
     );
 
-    // Try to save to GitHub again
-    const result = await syncService.updateDrawing(drawingToUse);
+    // Try to save to GitHub again (explicit user action after conflict)
+    (drawingToUse as any).__manualSync = true;
+    const result = await syncService.updateDrawing(drawingToUse, {
+      manual: true,
+    });
 
     if (!result.success) {
       XLogger.error("Failed to save drawing after conflict resolution");

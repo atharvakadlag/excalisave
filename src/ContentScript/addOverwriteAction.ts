@@ -1,5 +1,6 @@
 import { browser } from "webextension-polyfill-ts";
 import { XLogger } from "../lib/logger";
+import { MessageType } from "../constants/message.types";
 
 const addOverwriteAction = () => {
   const overwriteActionsDiv = document.querySelector(
@@ -47,13 +48,13 @@ const addOverwriteAction = () => {
       },
     });
 
-    var elem = document.querySelector(
+    const elem = document.querySelector(
       "body > div.excalidraw.excalidraw-modal-container > div > div.Modal__content > div > div > div > div.OverwriteConfirm__Description.OverwriteConfirm__Description--color-danger > button"
     ) as HTMLButtonElement;
     // convert elem into button
     elem.click();
 
-    browser.runtime.sendMessage({ type: "ClearDrawingID" });
+    browser.runtime.sendMessage({ type: MessageType.CLEAR_DRAWING_ID });
     XLogger.log("ClearDrawingID message sent");
   });
   const newDiv = document.createElement("div");

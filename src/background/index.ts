@@ -1,23 +1,27 @@
 import { browser } from "webextension-polyfill-ts";
 import {
   CleanupFilesMessage,
-  ConfigureGithubProviderMessage,
+  ConfigureSyncProviderMessage,
   DeleteDrawingMessage,
   GetChangeHistoryMessage,
   MessageType,
   SaveDrawingMessage,
   SaveNewDrawingMessage,
+  SetSyncAutoSyncMessage,
+  SetSyncDebounceMessage,
+  SyncDrawingMessage,
 } from "../constants/message.types";
+import { getDeviceHeaderValue } from "../services/git/shared";
 import { IDrawing } from "../interfaces/drawing.interface";
 import { XLogger } from "../lib/logger";
 import { TabUtils } from "../lib/utils/tab.utils";
 import { RandomUtils } from "../lib/utils/random.utils";
 import { SyncService } from "../services/sync.service";
-import { GitHubConfigService } from "../services/github/github-config.service";
+import { SyncConfigService } from "../services/sync-config.service";
 
 // Initialize services
 const syncService = SyncService.getInstance();
-const githubConfigService = GitHubConfigService.getInstance();
+const syncConfigService = SyncConfigService.getInstance();
 
 browser.runtime.onInstalled.addListener(async () => {
   XLogger.log("onInstalled...");
@@ -40,7 +44,10 @@ browser.runtime.onMessage.addListener(
       | CleanupFilesMessage
       | DeleteDrawingMessage
       | GetChangeHistoryMessage
-      | ConfigureGithubProviderMessage
+      | SetSyncDebounceMessage
+      | SetSyncAutoSyncMessage
+      | ConfigureSyncProviderMessage
+      | SyncDrawingMessage
       | any,
     _sender: any
   ) => {
@@ -51,10 +58,20 @@ browser.runtime.onMessage.addListener(
 
       switch (message.type) {
         case "OpenPopup":
-          browser.action.openPopup();
-          break;
+          try {
+            await browser.action.openPopup();
+            return { success: true };
+          } catch (err) {
+            XLogger.error("action.openPopup failed", err);
+            return {
+              success: false,
+              error: err instanceof Error ? err.message : String(err),
+            };
+          }
 
         case MessageType.SAVE_NEW_DRAWING:
+          await syncConfigService.ensureProvider();
+          await syncService.autoFlushIfReconnected();
           const drawing: IDrawing = {
             id: message.payload.id,
             name: message.payload.name,
@@ -71,10 +88,15 @@ browser.runtime.onMessage.addListener(
           };
 
           await browser.storage.local.set({ [message.payload.id]: drawing });
-          const saveResult = await syncService.updateDrawing(drawing);
+          if (message.payload.manualSync) (drawing as any).__manualSync = true;
+          const saveResult = await syncService.updateDrawing(drawing, {
+            manual: !!message.payload.manualSync,
+          });
           return { success: saveResult.success };
 
         case MessageType.SAVE_DRAWING:
+          await syncConfigService.ensureProvider();
+          await syncService.autoFlushIfReconnected();
           const exitentDrawing = (
             await browser.storage.local.get(message.payload.id)
           )[message.payload.id] as IDrawing;
@@ -105,10 +127,15 @@ browser.runtime.onMessage.addListener(
             [message.payload.id]: newData,
           });
 
-          const updateResult = await syncService.updateDrawing(newData);
+          if (message.payload.manualSync) (newData as any).__manualSync = true;
+          const updateResult = await syncService.updateDrawing(newData, {
+            manual: !!message.payload.manualSync,
+          });
           return { success: updateResult.success };
 
         case MessageType.SYNC_DRAWING:
+          await syncConfigService.ensureProvider();
+          await syncService.autoFlushIfReconnected();
           const drawingToSync = (
             await browser.storage.local.get(message.payload.id)
           )[message.payload.id] as IDrawing;
@@ -118,11 +145,17 @@ browser.runtime.onMessage.addListener(
             return { success: false, error: "No drawing found with id" };
           }
 
-          const syncResult = await syncService.updateDrawing(drawingToSync);
+          (drawingToSync as any).__manualSync = true;
+          const syncResult = await syncService.updateDrawing(drawingToSync, {
+            manual: true,
+          });
           return { success: syncResult.success };
 
         case MessageType.DELETE_DRAWING:
           XLogger.info("Deleting drawing", message.payload.id);
+
+          await syncConfigService.ensureProvider();
+          await syncService.autoFlushIfReconnected();
 
           const drawingToDelete = (
             await browser.storage.local.get(message.payload.id)
@@ -202,25 +235,36 @@ browser.runtime.onMessage.addListener(
 
           return { success: true };
 
-        case MessageType.CONFIGURE_GITHUB_PROVIDER:
-          return await githubConfigService.configureGitHubProvider(
-            message.payload.token,
-            message.payload.repoOwner,
-            message.payload.repoName,
+        case MessageType.CONFIGURE_SYNC_PROVIDER:
+          // Persist device name derived from header for attribution
+          try {
+            const dev = getDeviceHeaderValue();
+            await browser.storage.local.set({ syncDeviceName: dev });
+          } catch {}
+          return await syncConfigService.configureSyncProvider(
+            message.payload.config,
             message.payload.drawingsToSync
           );
 
-        case "REMOVE_GITHUB_PROVIDER":
-          return await githubConfigService.removeGitHubProvider();
+        case MessageType.REMOVE_SYNC_PROVIDER:
+          return await syncConfigService.removeSyncProvider();
 
-        case "GET_GITHUB_CONFIG":
-          return await githubConfigService.getGitHubConfig();
+        case MessageType.GET_SYNC_CONFIG:
+          return await syncConfigService.getSyncConfig();
 
-        case "CHECK_GITHUB_AUTH":
-          return await githubConfigService.checkGitHubAuth();
+        case MessageType.CHECK_SYNC_AUTH:
+          return await syncConfigService.checkSyncAuth();
+
+        case MessageType.CLEAR_DRAWING_ID:
+          // Vestigial no-op: page-side overwrite flow already avoids setting current id
+          // Also handle raw string for any legacy senders
+          return { success: true };
 
         case MessageType.DELETE_DRAWING_SYNC:
-          return await syncService.deleteDrawing(message.payload.id);
+          await syncConfigService.ensureProvider();
+          // Use the tolerant helper that accepts id string and forces remote delete
+          await syncService.deleteDrawingFromSync(message.payload.id);
+          return { success: true };
 
         case MessageType.GET_CHANGE_HISTORY:
           const changeHistory = await syncService.getChangeHistory(
@@ -232,8 +276,50 @@ browser.runtime.onMessage.addListener(
             commits: changeHistory,
           };
 
+        case MessageType.RESET_SYNC_HEALTH:
+          await syncConfigService.ensureProvider();
+          await syncService.resetHealth();
+          return { success: true };
+
+        case MessageType.GET_SYNC_HEALTH:
+          await syncConfigService.ensureProvider();
+          const health = await syncService.getHealth();
+          return { success: true, health };
+
+        case MessageType.GET_SYNC_LOG:
+          await syncConfigService.ensureProvider();
+          const log = await syncService.getRecentLog();
+          return { success: true, log };
+
+        case MessageType.CLEAR_SYNC_LOG:
+          await syncConfigService.ensureProvider();
+          await syncService.clearLog();
+          return { success: true };
+
+        case MessageType.SYNC_FLUSH:
+          await syncConfigService.ensureProvider();
+          // Gentle nudge: try to pull latest and let per-drawing saves push on demand
+          await syncService.syncFiles();
+          return { success: true };
+
+        case MessageType.SET_SYNC_DEBOUNCE:
+          await syncConfigService.ensureProvider({
+            debounceMs: message.payload.debounceMs,
+          });
+          return { success: true };
+        case MessageType.SET_SYNC_AUTOSYNC:
+          const as = !!message.payload?.autoSync;
+          await syncConfigService.ensureProvider({
+            autoSync: as,
+          });
+          return { success: true };
+
         default:
-          return { success: false, error: "Unknown message type" };
+          XLogger.warn("Unknown message type received in background", message);
+          return {
+            success: false,
+            error: `Unknown message type: ${String(message?.type)}`,
+          };
       }
     } catch (error) {
       XLogger.error("Error on background message listener", error);

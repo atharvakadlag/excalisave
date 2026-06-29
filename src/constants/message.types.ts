@@ -14,7 +14,19 @@ export enum MessageType {
   SHOW_MERGE_CONFLICT = "SHOW_MERGE_CONFLICT",
   SYNC_DRAWING = "SYNC_DRAWING",
   DELETE_DRAWING_SYNC = "DELETE_DRAWING_SYNC",
-  CONFIGURE_GITHUB_PROVIDER = "CONFIGURE_GITHUB_PROVIDER",
+  // Generic sync provider messages (replaces old GitHub-specific)
+  CONFIGURE_SYNC_PROVIDER = "CONFIGURE_SYNC_PROVIDER",
+  REMOVE_SYNC_PROVIDER = "REMOVE_SYNC_PROVIDER",
+  GET_SYNC_CONFIG = "GET_SYNC_CONFIG",
+  CHECK_SYNC_AUTH = "CHECK_SYNC_AUTH",
+  // Sync resilience / console
+  RESET_SYNC_HEALTH = "RESET_SYNC_HEALTH",
+  GET_SYNC_HEALTH = "GET_SYNC_HEALTH",
+  GET_SYNC_LOG = "GET_SYNC_LOG",
+  CLEAR_SYNC_LOG = "CLEAR_SYNC_LOG",
+  SYNC_FLUSH = "SYNC_FLUSH",
+  SET_SYNC_DEBOUNCE = "SET_SYNC_DEBOUNCE",
+  SET_SYNC_AUTOSYNC = "SET_SYNC_AUTOSYNC",
 }
 
 export type SaveNewDrawingMessage = {
@@ -23,6 +35,7 @@ export type SaveNewDrawingMessage = {
     id: string;
     name: string;
     sync?: boolean;
+    manualSync?: boolean;
     excalidraw: string;
     excalidrawState: string;
     versionFiles: string;
@@ -38,6 +51,7 @@ export type SaveDrawingMessage = {
     id: string;
     name?: string;
     sync?: boolean;
+    manualSync?: boolean;
     excalidraw: string;
     excalidrawState: string;
     versionFiles: string;
@@ -99,12 +113,37 @@ export type SyncDrawingMessage = {
   };
 };
 
-export type ConfigureGithubProviderMessage = {
-  type: MessageType.CONFIGURE_GITHUB_PROVIDER;
+// Generic sync config payload (used by the new generalized messages)
+export type AnySyncProviderConfig = {
+  provider: "github" | "gitea";
+  nickname?: string;
+  token: string;
+  owner: string;
+  repo: string;
+  branch: string;
+  baseUrl?: string;
+  debounceMs?: number;
+  autoSync?: boolean;
+};
+
+export type ConfigureSyncProviderMessage = {
+  type: MessageType.CONFIGURE_SYNC_PROVIDER;
   payload: {
-    token: string;
-    repoOwner: string;
-    repoName: string;
+    config: AnySyncProviderConfig;
     drawingsToSync: string[];
+  };
+};
+
+export type SetSyncDebounceMessage = {
+  type: MessageType.SET_SYNC_DEBOUNCE;
+  payload: {
+    debounceMs: number;
+  };
+};
+
+export type SetSyncAutoSyncMessage = {
+  type: MessageType.SET_SYNC_AUTOSYNC;
+  payload: {
+    autoSync: boolean;
   };
 };

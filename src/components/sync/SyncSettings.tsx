@@ -19,20 +19,32 @@ import { browser } from "webextension-polyfill-ts";
 import {
   MessageType,
   GetChangeHistoryMessage,
-  ConfigureGithubProviderMessage,
+  ConfigureSyncProviderMessage,
 } from "../../constants/message.types";
 import { ChangeHistoryItem } from "../../interfaces/sync.interface";
 import { IDrawing } from "../../interfaces/drawing.interface";
 import "./SyncSettings.scss";
+import {
+  CLAMP_MAX_SYNC_DEBOUNCE_MS,
+  DEFAULT_SYNC_DEBOUNCE_MS,
+} from "../../constants/sync-config";
 
 interface SyncSettingsProps {
   onBack: () => void;
 }
 
 const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
-  const [githubToken, setGithubToken] = useState("");
-  const [repoOwner, setRepoOwner] = useState("");
-  const [repoName, setRepoName] = useState("");
+  // Generalized sync target fields
+  const [providerKind, setProviderKind] = useState<"github" | "gitea">(
+    "github"
+  );
+  const [nickname, setNickname] = useState("");
+  const [token, setToken] = useState("");
+  const [owner, setOwner] = useState("");
+  const [repo, setRepo] = useState("");
+  const [branch, setBranch] = useState("main");
+  const [baseUrl, setBaseUrl] = useState(""); // only for gitea
+
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [commits, setCommits] = useState<ChangeHistoryItem[]>([]);
@@ -42,35 +54,69 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
   const [selectedDrawings, setSelectedDrawings] = useState<string[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
+  // Resilience / console state
+  const [debounceMs, setDebounceMs] = useState<number>(60000);
+  const [autoSync, setAutoSync] = useState<boolean>(true);
+  const [health, setHealth] = useState<any>(null);
+  const [syncLog, setSyncLog] = useState<any[]>([]);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(false);
+  const [isLoadingLog, setIsLoadingLog] = useState(false);
+
   useEffect(() => {
     const loadExistingConfig = async () => {
       try {
         setIsLoading(true);
         const response = await browser.runtime.sendMessage({
-          type: "GET_GITHUB_CONFIG",
+          type: MessageType.GET_SYNC_CONFIG,
         });
 
+        if (!response || typeof response !== "object") {
+          throw new Error("No response from background");
+        }
+
+        if (response.success === false) {
+          // Background reported a failure (e.g. migration or storage error)
+          if (response.error) {
+            setError(response.error);
+          }
+          // do not throw; continue so drawings list can still load
+        }
+
         if (response.success && response.config) {
-          setGithubToken(response.config.token || "");
-          setRepoOwner(response.config.repoOwner || "");
-          setRepoName(response.config.repoName || "");
+          const c = response.config;
+          setProviderKind((c.provider || "github") as "github" | "gitea");
+          setNickname(c.nickname || "");
+          setToken(c.token || "");
+          setOwner(c.owner || c.repoOwner || "");
+          setRepo(c.repo || c.repoName || "");
+          setBranch(c.branch || "main");
+          setBaseUrl(c.baseUrl || "");
 
-          // Check if sync is initialized
           const authResponse = await browser.runtime.sendMessage({
-            type: "CHECK_GITHUB_AUTH",
+            type: MessageType.CHECK_SYNC_AUTH,
           });
-          setIsInitialized(
-            authResponse.success && authResponse.isAuthenticated
-          );
+          if (!authResponse || typeof authResponse !== "object") {
+            // non-fatal for initial load
+          } else {
+            setIsInitialized(
+              authResponse.success && authResponse.isAuthenticated
+            );
+          }
 
-          // Load commit history if GitHub is configured
-          if (
-            response.config.token &&
-            response.config.repoOwner &&
-            response.config.repoName
-          ) {
+          if (c.token && (c.owner || c.repoOwner) && (c.repo || c.repoName)) {
             loadCommitHistory();
           }
+
+          // Load debounce from config (default 10s)
+          const d = typeof c.debounceMs === "number" ? c.debounceMs : 10000;
+          setDebounceMs(d);
+
+          // Load autoSync from config (default true)
+          const as = typeof c.autoSync === "boolean" ? c.autoSync : true;
+          setAutoSync(as);
+
+          // Load health + log for console
+          loadHealthAndLog();
         }
 
         // Load drawings
@@ -81,7 +127,6 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
 
         if (drawings) {
           setDrawings(drawings);
-          // Select all drawings by default
           setSelectedDrawings(drawings.map((d: IDrawing) => d.id));
         }
       } catch (error) {
@@ -106,10 +151,12 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
         },
       } as GetChangeHistoryMessage);
 
-      if (response.success && response.commits) {
+      if (!response || !response.success) {
+        setCommitError(
+          (response && response.error) || "Failed to load commit history"
+        );
+      } else if (response.commits) {
         setCommits(response.commits);
-      } else {
-        setCommitError(response.error || "Failed to load commit history");
       }
     } catch (error) {
       setCommitError("Failed to load commit history");
@@ -118,23 +165,94 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
     }
   };
 
+  const loadHealthAndLog = async () => {
+    try {
+      setIsLoadingHealth(true);
+      setIsLoadingLog(true);
+
+      const [h, l] = await Promise.all([
+        browser.runtime.sendMessage({ type: MessageType.GET_SYNC_HEALTH }),
+        browser.runtime.sendMessage({ type: MessageType.GET_SYNC_LOG }),
+      ]);
+
+      if (h && h.success && h.health) setHealth(h.health);
+      if (l && l.success && Array.isArray(l.log)) setSyncLog(l.log);
+    } catch {
+      // non-fatal for console
+    } finally {
+      setIsLoadingHealth(false);
+      setIsLoadingLog(false);
+    }
+  };
+
+  const handleResetHealth = async () => {
+    try {
+      await browser.runtime.sendMessage({
+        type: MessageType.RESET_SYNC_HEALTH,
+      });
+      await loadHealthAndLog();
+    } catch {}
+  };
+
+  const handleClearLog = async () => {
+    try {
+      await browser.runtime.sendMessage({ type: MessageType.CLEAR_SYNC_LOG });
+      setSyncLog([]);
+    } catch {}
+  };
+
+  const handleRefreshLog = async () => {
+    await loadHealthAndLog();
+  };
+
+  const handleApplyDebounce = async (ms: number) => {
+    const clamped = Math.max(
+      0,
+      Math.min(CLAMP_MAX_SYNC_DEBOUNCE_MS, Math.floor(ms))
+    );
+    try {
+      await browser.runtime.sendMessage({
+        type: MessageType.SET_SYNC_DEBOUNCE,
+        payload: { debounceMs: clamped },
+      });
+      setDebounceMs(clamped);
+    } catch {}
+  };
+
+  const handleApplyAutoSync = async (enabled: boolean) => {
+    try {
+      await browser.runtime.sendMessage({
+        type: MessageType.SET_SYNC_AUTOSYNC,
+        payload: { autoSync: enabled },
+      });
+      setAutoSync(enabled);
+    } catch {}
+  };
+
   const handleRemoveSync = async () => {
     try {
       setError("");
       setIsLoading(true);
 
       const response = await browser.runtime.sendMessage({
-        type: "REMOVE_GITHUB_PROVIDER",
+        type: MessageType.REMOVE_SYNC_PROVIDER,
       });
 
-      if (!response.success) {
-        setError(response.error || "Failed to remove sync configuration");
+      if (!response || !response.success) {
+        setError(
+          (response && response.error) || "Failed to remove sync configuration"
+        );
         return;
       }
 
-      setGithubToken("");
-      setRepoOwner("");
-      setRepoName("");
+      // Clear generalized fields
+      setProviderKind("github");
+      setNickname("");
+      setToken("");
+      setOwner("");
+      setRepo("");
+      setBranch("main");
+      setBaseUrl("");
       setCommits([]);
     } catch (error) {
       setError("Failed to remove sync configuration");
@@ -148,41 +266,68 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
       setError("");
       setIsLoading(true);
 
+      const payloadConfig = {
+        provider: providerKind,
+        nickname: nickname || undefined,
+        token,
+        owner,
+        repo,
+        branch: branch || "main",
+        baseUrl: providerKind === "gitea" ? baseUrl || undefined : undefined,
+        debounceMs,
+        autoSync,
+      };
+      // Request host permission for custom gitea/forgejo baseUrl (arbitrary self-hosted)
+      if (providerKind === "gitea" && baseUrl) {
+        try {
+          const origin = new URL(baseUrl).origin + "/*";
+          const granted = await browser.permissions.request({
+            origins: [origin],
+          });
+          if (!granted) {
+            setError("Permission to access the custom host was not granted.");
+            setIsLoading(false);
+            return;
+          }
+        } catch {
+          // fall through; configure step will surface network/auth error if unreachable
+        }
+      }
+
       const response = await browser.runtime.sendMessage({
-        type: "CONFIGURE_GITHUB_PROVIDER",
+        type: MessageType.CONFIGURE_SYNC_PROVIDER,
         payload: {
-          token: githubToken,
-          repoOwner: repoOwner,
-          repoName: repoName,
+          config: payloadConfig,
           drawingsToSync: selectedDrawings,
         },
-      } as ConfigureGithubProviderMessage);
+      } as ConfigureSyncProviderMessage);
 
-      if (!response.success) {
-        setError(response.error || "Failed to initialize GitHub sync");
+      if (!response || !response.success) {
+        setError((response && response.error) || "Failed to initialize sync");
         setIsInitialized(false);
         return;
       }
 
       const authResponse = await browser.runtime.sendMessage({
-        type: "CHECK_GITHUB_AUTH",
+        type: MessageType.CHECK_SYNC_AUTH,
       });
-      if (!authResponse.success || !authResponse.isAuthenticated) {
+      if (
+        !authResponse ||
+        !authResponse.success ||
+        !authResponse.isAuthenticated
+      ) {
         setError(
-          "Failed to authenticate with GitHub. Please check your token and repository settings."
+          "Failed to authenticate. Please check your token and settings."
         );
         setIsInitialized(false);
         return;
       }
 
       setIsInitialized(true);
-      // Load commit history after successful configuration
       loadCommitHistory();
     } catch (error) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to initialize GitHub sync"
+        error instanceof Error ? error.message : "Failed to initialize sync"
       );
       setIsInitialized(false);
     } finally {
@@ -226,8 +371,9 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                 </Badge>
               </Flex>
               <Text size="2" as="p" color="gray">
-                Configure GitHub integration, manage synced files, and view
-                history.
+                Configure a Git sync target (GitHub or Gitea/Forgejo incl.
+                Codeberg). Set a nickname for future multi-remote use, and
+                choose a branch (default "main").
               </Text>
             </Box>
           </Flex>
@@ -240,11 +386,12 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
           >
             <Card size="3" className="sync-settings-card">
               <Heading as="h3" size="5" mb="2">
-                GitHub Integration
+                Git Sync Provider
               </Heading>
               <Text size="2" as="p" color="gray" mb="4">
-                Connect your GitHub account to sync your drawings. You'll need a
-                Personal Access Token.{" "}
+                Choose GitHub or Gitea/Forgejo (Codeberg + self-hosted). Set a
+                nickname for future multi-remote use, and pick a branch (default
+                "main").{" "}
                 <HoverCard.Root>
                   <HoverCard.Trigger>
                     <InfoCircledIcon
@@ -259,13 +406,15 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       }}
                     />
                   </HoverCard.Trigger>
-                  <HoverCard.Content size="2" style={{ maxWidth: 400 }}>
+                  <HoverCard.Content size="2" style={{ maxWidth: 480 }}>
                     <Flex direction="column" gap="2">
                       <Text size="2" weight="bold">
                         Setup Instructions:
                       </Text>
+
+                      {/* Provider selector help */}
                       <Text size="2">
-                        1. Create a GitHub Personal Access Token:
+                        Provider:
                         <ul
                           style={{
                             marginTop: "4px",
@@ -274,36 +423,19 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                           }}
                         >
                           <li>
-                            Go to GitHub Settings → Developer Settings →
-                            Personal Access Tokens → Fine-grained tokens
-                          </li>
-                          <li>Click "Generate new token"</li>
-                          <li>Give it a name (e.g., "Excalisave Sync")</li>
-                          <li>
-                            For better security, select "Only select
-                            repositories" and choose your specific repository
+                            <b>GitHub</b>: uses github.com API
                           </li>
                           <li>
-                            Under "Repository permissions":
-                            <ul
-                              style={{
-                                marginTop: "4px",
-                                marginLeft: "20px",
-                                paddingLeft: "var(--space-2)",
-                              }}
-                            >
-                              <li>Contents: Read and write</li>
-                              <li>Metadata: Read-only</li>
-                            </ul>
-                          </li>
-                          <li>
-                            Copy the generated token immediately (you won't see
-                            it again)
+                            <b>Gitea/Forgejo</b>: works with Codeberg.org and
+                            any self-hosted Forgejo/Gitea instance. Set the Base
+                            API URL accordingly (Codeberg default:
+                            https://codeberg.org/api/v1).
                           </li>
                         </ul>
                       </Text>
+
                       <Text size="2">
-                        2. Create a GitHub Repository:
+                        1. Create a Personal Access Token (PAT):
                         <ul
                           style={{
                             marginTop: "4px",
@@ -312,19 +444,26 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                           }}
                         >
                           <li>
-                            Go to GitHub and click the "+" in the top right
+                            GitHub: Settings → Developer Settings → Personal
+                            Access Tokens → Fine-grained tokens. Contents: Read
+                            and write, Metadata: Read-only.
                           </li>
-                          <li>Select "New repository"</li>
-                          <li>Choose a repository name</li>
-                          <li>Make it public or private as needed</li>
                           <li>
-                            Don't initialize with README if you want to sync
-                            existing files
+                            Gitea/Forgejo (Codeberg): User Settings →
+                            Applications → Generate Token. Grant repository
+                            read/write scope.
                           </li>
                         </ul>
                       </Text>
+
                       <Text size="2">
-                        3. Enter the details below:
+                        2. Create a repository on your chosen host if you don't
+                        have one. Do not initialize with README if you want to
+                        sync existing drawings.
+                      </Text>
+
+                      <Text size="2">
+                        3. Fill in the fields below:
                         <ul
                           style={{
                             marginTop: "4px",
@@ -332,12 +471,27 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                             paddingLeft: "var(--space-2)",
                           }}
                         >
-                          <li>Paste your Personal Access Token</li>
                           <li>
-                            Enter your GitHub username or organization name
+                            <b>Nickname</b> (optional): label for this target
+                            (useful later for multi-remote or grouping).
                           </li>
-                          <li>Enter the repository name you created</li>
+                          <li>Paste your PAT</li>
+                          <li>Owner / organization / group</li>
+                          <li>Repository / project name</li>
+                          <li>Branch (default: main)</li>
+                          <li>
+                            Base API URL (only for Gitea/Forgejo; e.g.
+                            https://codeberg.org/api/v1 or your self-hosted
+                            /api/v1)
+                          </li>
                         </ul>
+                      </Text>
+                      <Text size="2" color="gray">
+                        Permissions: public hosts (GitHub, Codeberg, gitea.com)
+                        are pre-granted. For other self-hosted instances the
+                        extension will request the origin when you save; you can
+                        also grant manually in your browser's extension site
+                        access settings.
                       </Text>
                     </Flex>
                   </HoverCard.Content>
@@ -345,60 +499,216 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
               </Text>
 
               <Flex direction="column" gap="4">
+                {/* Provider selector */}
                 <Box>
                   <Text as="label" size="2" mb="1">
-                    GitHub Token <Text color="red">*</Text>
+                    Provider <Text color="red">*</Text>
+                  </Text>
+                  <select
+                    value={providerKind}
+                    onChange={(e) =>
+                      setProviderKind(e.target.value as "github" | "gitea")
+                    }
+                    disabled={isLoading}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--gray-a6)",
+                      background: "var(--gray-a2)",
+                      color: "var(--gray-12)",
+                    }}
+                  >
+                    <option value="github">GitHub</option>
+                    <option value="gitea">
+                      Gitea / Forgejo (e.g. Codeberg)
+                    </option>
+                  </select>
+                </Box>
+
+                {/* Nickname */}
+                <Box>
+                  <Text as="label" size="2" mb="1">
+                    Nickname (optional)
+                  </Text>
+                  <TextField.Root>
+                    <TextField.Input
+                      placeholder="Label for this sync target (e.g. work-codeberg)"
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </TextField.Root>
+                </Box>
+
+                {/* Token */}
+                <Box>
+                  <Text as="label" size="2" mb="1">
+                    Access Token (PAT) <Text color="red">*</Text>
                   </Text>
                   <TextField.Root>
                     <TextField.Input
                       type="password"
-                      placeholder="Enter your GitHub token (e.g., ghp_...)"
-                      value={githubToken}
-                      onChange={(e) => setGithubToken(e.target.value)}
+                      placeholder="Paste your PAT"
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
                       required
                       disabled={isLoading}
                     />
                   </TextField.Root>
                 </Box>
+
+                {/* Owner */}
                 <Box>
                   <Text as="label" size="2" mb="1">
-                    Repository Owner <Text color="red">*</Text>
+                    Owner / Group <Text color="red">*</Text>
                   </Text>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder="Your GitHub username or organization"
-                      value={repoOwner}
-                      onChange={(e) => setRepoOwner(e.target.value)}
+                      placeholder="username or org/group"
+                      value={owner}
+                      onChange={(e) => setOwner(e.target.value)}
                       required
                       disabled={isLoading}
                     />
                   </TextField.Root>
                 </Box>
+
+                {/* Repo */}
                 <Box>
                   <Text as="label" size="2" mb="1">
-                    Repository Name <Text color="red">*</Text>
+                    Repository / Project <Text color="red">*</Text>
                   </Text>
                   <TextField.Root>
                     <TextField.Input
-                      placeholder="The name of your repository"
-                      value={repoName}
-                      onChange={(e) => setRepoName(e.target.value)}
+                      placeholder="repository name or group/sub/project"
+                      value={repo}
+                      onChange={(e) => setRepo(e.target.value)}
                       required
                       disabled={isLoading}
                     />
                   </TextField.Root>
                 </Box>
+
+                {/* Branch (default main) */}
+                <Box>
+                  <Text as="label" size="2" mb="1">
+                    Branch
+                  </Text>
+                  <TextField.Root>
+                    <TextField.Input
+                      placeholder="main"
+                      value={branch}
+                      onChange={(e) => setBranch(e.target.value || "main")}
+                      disabled={isLoading}
+                    />
+                  </TextField.Root>
+                  <Text size="1" color="gray">
+                    Default: main
+                  </Text>
+                </Box>
+
+                {/* Debounce (0..600 seconds) */}
+                <Box>
+                  <Text as="label" size="2" mb="1">
+                    Debounce (seconds)
+                  </Text>
+                  <Flex gap="2" align="center">
+                    <TextField.Root>
+                      <TextField.Input
+                        type="number"
+                        min={0}
+                        max={600}
+                        step={1}
+                        value={Math.floor(debounceMs / 1000)}
+                        onChange={(e) => {
+                          const secs = Math.max(
+                            0,
+                            Math.min(
+                              600,
+                              Math.floor(Number(e.target.value) || 0)
+                            )
+                          );
+                          setDebounceMs(secs * 1000);
+                        }}
+                        disabled={isLoading}
+                        style={{ width: 120 }}
+                      />
+                    </TextField.Root>
+                    <Button
+                      variant="soft"
+                      onClick={() => handleApplyDebounce(debounceMs)}
+                      disabled={isLoading}
+                    >
+                      Apply
+                    </Button>
+                    <Text size="1" color="gray">
+                      0 disables. Default 60s. Max{" "}
+                      {CLAMP_MAX_SYNC_DEBOUNCE_MS / 1000 / 60 / 60}hr
+                    </Text>
+                  </Flex>
+                </Box>
+
+                {/* Auto-sync toggle */}
+                <Box>
+                  <Text as="label" size="2" mb="1">
+                    Auto-sync
+                  </Text>
+                  <Flex gap="2" align="center">
+                    <Button
+                      variant={autoSync ? "solid" : "soft"}
+                      onClick={() => handleApplyAutoSync(true)}
+                      disabled={isLoading}
+                    >
+                      Enabled
+                    </Button>
+                    <Button
+                      variant={!autoSync ? "solid" : "soft"}
+                      onClick={() => handleApplyAutoSync(false)}
+                      disabled={isLoading}
+                    >
+                      Disabled
+                    </Button>
+                    <Text size="1" color="gray">
+                      When disabled, sync only on explicit "Save" from
+                      excalisave menu.
+                    </Text>
+                  </Flex>
+                </Box>
+
+                {/* Base URL (only for gitea) */}
+                {providerKind === "gitea" && (
+                  <Box>
+                    <Text as="label" size="2" mb="1">
+                      Base API URL
+                    </Text>
+                    <TextField.Root>
+                      <TextField.Input
+                        placeholder="https://codeberg.org/api/v1"
+                        value={baseUrl}
+                        onChange={(e) => setBaseUrl(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </TextField.Root>
+                    <Text size="1" color="gray">
+                      For Codeberg use https://codeberg.org/api/v1. For
+                      self-hosted Forgejo/Gitea use your instance /api/v1. The
+                      extension will request permission for custom hosts when
+                      you save.
+                    </Text>
+                  </Box>
+                )}
+
                 {error && (
                   <Text size="2" color="red">
                     {error}
                   </Text>
                 )}
+
                 <Flex gap="3" mt="2">
                   <Button
                     onClick={handleSaveAndUse}
-                    disabled={
-                      !githubToken || !repoOwner || !repoName || isLoading
-                    }
+                    disabled={!token || !owner || !repo || isLoading}
                   >
                     {isLoading ? "Saving..." : "Save And Use Settings"}
                   </Button>
@@ -406,9 +716,7 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                     variant="soft"
                     color="red"
                     onClick={handleRemoveSync}
-                    disabled={
-                      (!githubToken && !repoOwner && !repoName) || isLoading
-                    }
+                    disabled={(!token && !owner && !repo) || isLoading}
                   >
                     {isLoading ? "Removing..." : "Remove Sync"}
                   </Button>
@@ -422,7 +730,9 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                 {drawings.length})
               </Heading>
               <Text size="2" as="p" color="gray" mb="4">
-                Choose whether to sync all your drawings with GitHub.
+                Choose which drawings to opt into the active sync target at
+                configuration time. You can toggle sync per-drawing later from
+                the main list.
               </Text>
 
               <Flex direction="column" gap="2">
@@ -440,9 +750,142 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       selectedDrawings.length === drawings.length
                     }
                     onCheckedChange={handleSelectAll}
-                    disabled={drawings.length === 0}
                   />
                 </Flex>
+              </Flex>
+            </Card>
+
+            <Card size="3" className="sync-settings-card">
+              <Heading as="h3" size="5" mb="2">
+                Sync Console
+              </Heading>
+              <Text size="2" as="p" color="gray" mb="3">
+                Local sync activity, health, and controls. Debounce and circuit
+                breaker prevent hammering on errors or offline.
+              </Text>
+
+              <Flex direction="column" gap="3">
+                <Flex align="center" gap="2" wrap="wrap">
+                  <Text size="2" weight="medium">
+                    Health:
+                  </Text>
+                  <Badge
+                    color={
+                      !health
+                        ? "gray"
+                        : health.state === "closed"
+                        ? "green"
+                        : health.state === "half-open"
+                        ? "amber"
+                        : "red"
+                    }
+                  >
+                    {health
+                      ? `${health.state} (failures=${health.failures || 0})`
+                      : isLoadingHealth
+                      ? "loading..."
+                      : "unknown"}
+                  </Badge>
+                  {health && health.lastError && (
+                    <Text size="1" color="gray" title={health.lastError}>
+                      last: {String(health.lastError).slice(0, 60)}
+                    </Text>
+                  )}
+                </Flex>
+
+                <Flex gap="2" wrap="wrap">
+                  <Button
+                    variant="soft"
+                    onClick={handleResetHealth}
+                    disabled={isLoading}
+                  >
+                    Reset health
+                  </Button>
+                  <Button
+                    variant="soft"
+                    onClick={async () => {
+                      try {
+                        await browser.runtime.sendMessage({
+                          type: MessageType.SYNC_FLUSH,
+                        });
+                      } catch {}
+                      await loadHealthAndLog();
+                    }}
+                    disabled={isLoading}
+                  >
+                    Flush now
+                  </Button>
+                  <Button
+                    variant="soft"
+                    onClick={handleClearLog}
+                    disabled={isLoading}
+                  >
+                    Clear log
+                  </Button>
+                  <Button
+                    variant="soft"
+                    onClick={handleRefreshLog}
+                    disabled={isLoading}
+                  >
+                    Refresh
+                  </Button>
+                </Flex>
+
+                {isLoadingLog ? (
+                  <Text size="2" color="gray">
+                    Loading console...
+                  </Text>
+                ) : syncLog.length === 0 ? (
+                  <Card variant="surface">
+                    <Text size="2" color="gray">
+                      No sync events yet.
+                    </Text>
+                  </Card>
+                ) : (
+                  <ScrollArea className="sync-history-scroll">
+                    <Flex direction="column" gap="2">
+                      {syncLog
+                        .slice()
+                        .reverse()
+                        .map((e, idx) => (
+                          <Card key={idx} size="1" variant="surface">
+                            <Flex direction="column" gap="1">
+                              <Flex justify="between" align="center" gap="2">
+                                <Badge
+                                  color={
+                                    e.level === "error"
+                                      ? "red"
+                                      : e.level === "warn"
+                                      ? "amber"
+                                      : "gray"
+                                  }
+                                >
+                                  {e.level}
+                                </Badge>
+                                <Text
+                                  size="1"
+                                  color="gray"
+                                  style={{ whiteSpace: "nowrap" }}
+                                >
+                                  {formatDate(String(e.ts))}
+                                </Text>
+                              </Flex>
+                              <Text size="2">{e.message}</Text>
+                              {e.detail && (
+                                <Text
+                                  size="1"
+                                  color="gray"
+                                  style={{ whiteSpace: "pre-wrap" }}
+                                >
+                                  {String(e.detail).slice(0, 800)}
+                                </Text>
+                              )}
+                            </Flex>
+                          </Card>
+                        ))}
+                    </Flex>
+                  </ScrollArea>
+                )}
               </Flex>
             </Card>
 
@@ -451,7 +894,8 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                 Sync History
               </Heading>
               <Text size="2" as="p" color="gray" mb="4">
-                Recent synchronization activity with your GitHub repository.
+                Recent synchronization activity with your configured sync
+                target.
               </Text>
 
               {isLoadingCommits ? (
@@ -480,8 +924,8 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
               ) : commits.length === 0 ? (
                 <Card variant="surface">
                   <Text size="2" color="gray">
-                    No sync history found. Configure GitHub above and sync some
-                    drawings.
+                    No sync history found. Configure a provider above and sync
+                    some drawings.
                   </Text>
                 </Card>
               ) : (

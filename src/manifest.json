@@ -64,7 +64,13 @@
     }
   ],
   "host_permissions": [
-    "https://excalidraw.com/*"
+    "https://excalidraw.com/*",
+    "https://api.github.com/*",
+    "https://codeberg.org/*",
+    "https://gitea.com/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*"
   ],
   "content_scripts": [
     {

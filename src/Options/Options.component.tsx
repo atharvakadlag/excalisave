@@ -76,7 +76,11 @@ export const Options: React.FC = () => {
               as="p"
               style={{ lineHeight: 1.1, marginBottom: "16px" }}
             >
-              Configure GitHub sync settings and manage synced files.
+              Configure a Git sync target (GitHub or Gitea/Forgejo incl.
+              Codeberg), set nickname/branch, and manage which drawings are
+              synced. Public hosts are pre-granted; custom self-hosted origins
+              will prompt for permission (or grant manually in browser extension
+              site access).
             </Text>
             <Button
               onClick={() => setShowSyncSettings(true)}
