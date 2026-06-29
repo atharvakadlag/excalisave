@@ -58,8 +58,16 @@ browser.runtime.onMessage.addListener(
 
       switch (message.type) {
         case "OpenPopup":
-          browser.action.openPopup();
-          return { success: true };
+          try {
+            await browser.action.openPopup();
+            return { success: true };
+          } catch (err) {
+            XLogger.error("action.openPopup failed", err);
+            return {
+              success: false,
+              error: err instanceof Error ? err.message : String(err),
+            };
+          }
 
         case MessageType.SAVE_NEW_DRAWING:
           await syncConfigService.ensureProvider();

@@ -750,7 +750,6 @@ const SyncSettings: React.FC<SyncSettingsProps> = ({ onBack }) => {
                       selectedDrawings.length === drawings.length
                     }
                     onCheckedChange={handleSelectAll}
-                    disabled={drawings.length === 0}
                   />
                 </Flex>
               </Flex>
